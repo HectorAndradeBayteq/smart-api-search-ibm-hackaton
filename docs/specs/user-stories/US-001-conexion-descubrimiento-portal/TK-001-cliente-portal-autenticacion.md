@@ -32,15 +32,15 @@ tests/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Extender `config.py` con las variables del portal como campos opcionales en `Settings`: `IBM_PORTAL_HOST`, `IBM_PORTAL_AUTH` (bool, default `False`), `IBM_TOKEN_URL`, `IBM_INSTANCE_ID`, `IBM_API_KEY`, `IBM_PORTAL_VERIFY_SSL` (bool, default `True`)
+- [x] **IT-01** — Extender `config.py` con las variables del portal como campos opcionales en `Settings`: `IBM_PORTAL_HOST`, `IBM_PORTAL_AUTH` (bool, default `False`), `IBM_TOKEN_URL`, `IBM_INSTANCE_ID`, `IBM_API_KEY`, `IBM_PORTAL_VERIFY_SSL` (bool, default `True`)
   Ninguna de estas variables debe ser obligatoria a nivel de módulo; la validación de presencia se hace en el momento de uso (al construir el cliente), no en tiempo de carga
-- [ ] **IT-02** — Implementar función `get_iam_token(settings) -> str` que realiza `POST {IBM_TOKEN_URL}/{IBM_INSTANCE_ID}/apikeys/token` con cuerpo `{"apikey": IBM_API_KEY}` y devuelve el token de acceso de la respuesta
+- [x] **IT-02** — Implementar función `get_iam_token(settings) -> str` que realiza `POST {IBM_TOKEN_URL}/{IBM_INSTANCE_ID}/apikeys/token` con cuerpo `{"apikey": IBM_API_KEY}` y devuelve el token de acceso de la respuesta
   Solo se invoca cuando `IBM_PORTAL_AUTH=True`; lanza error claro sin traza técnica si la petición falla o la respuesta no contiene el token
-- [ ] **IT-03** — Implementar función `build_portal_client(settings) -> httpx.AsyncClient` que construye y devuelve un `httpx.AsyncClient` preconfigurado
+- [x] **IT-03** — Implementar función `build_portal_client(settings) -> httpx.AsyncClient` que construye y devuelve un `httpx.AsyncClient` preconfigurado
   Si `IBM_PORTAL_AUTH=True`: llama a `get_iam_token` e incluye `headers={"Authorization": f"bearer {token}"}`; si `IBM_PORTAL_AUTH=False`: no solicita token ni incluye cabecera `Authorization`; si `IBM_PORTAL_VERIFY_SSL=False`: `verify=False` + `warnings.filterwarnings("ignore", ...)` para silenciar avisos de `urllib3`/`httpx`; base URL fijada en `IBM_PORTAL_HOST`
-- [ ] **IT-04** — Garantizar opcionalidad en tiempo de carga: las variables del portal no deben evaluarse ni requerirse al importar el módulo; la validación de `IBM_PORTAL_HOST` y de `IBM_API_KEY` (cuando `IBM_PORTAL_AUTH=True`) ocurre únicamente al llamar a `build_portal_client`
+- [x] **IT-04** — Garantizar opcionalidad en tiempo de carga: las variables del portal no deben evaluarse ni requerirse al importar el módulo; la validación de `IBM_PORTAL_HOST` y de `IBM_API_KEY` (cuando `IBM_PORTAL_AUTH=True`) ocurre únicamente al llamar a `build_portal_client`
   El arranque del servidor en modo archivos (`--source files`) y la ejecución de `pytest` sin variables del portal no deben producir error alguno
-- [ ] **IT-05** — Escribir pruebas unitarias en `tests/test_portal_client.py` con mocks de `httpx.AsyncClient`
+- [x] **IT-05** — Escribir pruebas unitarias en `tests/test_portal_client.py` con mocks de `httpx.AsyncClient`
   Cubrir: obtención de token con `IBM_PORTAL_AUTH=True` (cabecera presente), modo sin auth (sin cabecera ni petición de token), `IBM_PORTAL_VERIFY_SSL=False` (verify desactivado y sin avisos), ausencia de `IBM_PORTAL_HOST` al construir cliente (error claro), ausencia de variables de portal al importar (sin error)
 
 ## Observaciones

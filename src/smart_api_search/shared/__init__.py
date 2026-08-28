@@ -4,5 +4,5 @@ Arquitectura: ninguna otra capa puede importar directamente los clientes de
 OpenAI o Watsonx para obtener embeddings — toda llamada debe pasar por aquí
 (ver ADR-009 y RNF-07).
 """
-from __future__ import annotations
 
+from __future__ import annotations

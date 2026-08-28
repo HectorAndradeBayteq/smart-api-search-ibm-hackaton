@@ -1,4 +1,5 @@
 """CLI de arranque del servidor MCP."""
+
 from __future__ import annotations
 
 
