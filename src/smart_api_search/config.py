@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # --- OpenAI ---
     OPENAI_API_KEY: str | None = Field(default=None)
 
+    # --- HyDE (ADR-008) ---
+    HYDE_ENABLED: bool = Field(default=True)
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 
