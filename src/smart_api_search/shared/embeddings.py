@@ -5,10 +5,12 @@ Selecciona el proveedor según ``settings.EMBED_PROVIDER``:
 - ``watsonx``: usa ``ibm/granite-embedding-278m-multilingual`` con ``EMBED_DIM=768`` (ADR-014).
 
 Ninguna otra capa del paquete puede importar directamente los SDKs de
-embeddings; toda llamada debe pasar por ``get_embedding()`` (ADR-009, AC-025).
+embeddings; toda llamada debe pasar por ``embed()`` / ``get_embedding()`` (ADR-009, AC-025).
 """
 
 from __future__ import annotations
+
+import logging
 
 from smart_api_search.config import EmbedProvider, settings
 
@@ -36,12 +38,12 @@ except ImportError:  # pragma: no cover
         WatsonxEmbeddings = None
 
 
-def get_embedding(text: str) -> list[float]:
+def embed(text: str) -> list[float]:
     """Genera el vector denso para ``text`` usando el proveedor configurado.
 
-    El proveedor se lee de ``settings.EMBED_PROVIDER``; la dimensión de
-    ``settings.EMBED_DIM`` nunca aparece como literal en este módulo
-    (AC-027, ADR-009).
+    Punto público de la capa compartida (AC-009, ADR-009).  El proveedor se
+    lee de ``settings.EMBED_PROVIDER``; la dimensión de ``settings.EMBED_DIM``
+    nunca aparece como literal en este módulo (AC-027, ADR-009).
 
     Args:
         text: Texto a vectorizar.
@@ -62,6 +64,35 @@ def get_embedding(text: str) -> list[float]:
         raise RuntimeError(f"Proveedor de embeddings no soportado: {provider!r}")
 
 
+#: Alias de compatibilidad para código existente que usa ``get_embedding``.
+get_embedding = embed
+
+
+def warn_if_mismatch(collection_provider: str, collection_dim: int) -> None:
+    """Advierte si el proveedor o dimensión activos no coinciden con la colección.
+
+    No lanza excepción; solo emite ``logging.warning`` (AC-011 usa DEBERÍA).
+
+    Args:
+        collection_provider: Proveedor usado al indexar la colección.
+        collection_dim: Dimensión del vector denso de la colección.
+    """
+    active_provider = settings.EMBED_PROVIDER.value
+    active_dim = settings.EMBED_DIM
+    mismatches: list[str] = []
+    if active_provider != collection_provider:
+        mismatches.append(
+            f"proveedor activo={active_provider!r} ≠ colección={collection_provider!r}"
+        )
+    if active_dim != collection_dim:
+        mismatches.append(f"dimensión activa={active_dim} ≠ colección={collection_dim}")
+    if mismatches:
+        logging.warning(
+            "Desajuste de embedding — la búsqueda puede devolver resultados incorrectos: %s",
+            "; ".join(mismatches),
+        )
+
+
 def _embed_openai(text: str) -> list[float]:
     """Genera embedding con OpenAI ``text-embedding-3-large`` (AC-026)."""
     response = openai.embeddings.create(
@@ -74,10 +105,37 @@ def _embed_openai(text: str) -> list[float]:
 
 def _embed_watsonx(text: str) -> list[float]:
     """Genera embedding con IBM Granite multilingual (AC-026, ADR-014)."""
-    embedder = WatsonxEmbeddings(
-        model_id="ibm/granite-embedding-278m-multilingual",
-        url=settings.WATSONX_URL,
-        apikey=settings.WATSONX_API_KEY,
+    if not settings.WATSONX_API_KEY or not settings.WATSONX_URL or not settings.WATSONX_PROJECT_ID:
+        raise RuntimeError(
+            "Faltan WATSONX_API_KEY, WATSONX_URL o WATSONX_PROJECT_ID "
+            "cuando EMBED_PROVIDER=watsonx"
+        )
+
+    model_id = "ibm/granite-embedding-278m-multilingual"
+
+    # langchain-ibm (opcional): API distinta a ibm-watsonx-ai nativo.
+    try:
+        from langchain_ibm import WatsonxEmbeddings as LcWatsonxEmbeddings
+
+        embedder = LcWatsonxEmbeddings(
+            model_id=model_id,
+            url=settings.WATSONX_URL,
+            apikey=settings.WATSONX_API_KEY,
+            project_id=settings.WATSONX_PROJECT_ID,
+        )
+        return list(embedder.embed_query(text))
+    except ImportError:
+        pass
+
+    from ibm_watsonx_ai import Credentials
+    from ibm_watsonx_ai.foundation_models import Embeddings
+
+    embedder = Embeddings(
+        model_id=model_id,
+        credentials=Credentials(
+            url=settings.WATSONX_URL,
+            api_key=settings.WATSONX_API_KEY,
+        ),
         project_id=settings.WATSONX_PROJECT_ID,
     )
     return list(embedder.embed_query(text))

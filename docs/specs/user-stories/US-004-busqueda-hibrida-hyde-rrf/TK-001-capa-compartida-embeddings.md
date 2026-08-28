@@ -34,11 +34,11 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Ampliar `Settings` en `config.py` con los campos de embedding y advertencia
+- [x] **IT-01** — Ampliar `Settings` en `config.py` con los campos de embedding y advertencia
   Añadir a `Settings`: `EMBED_PROVIDER: EmbedProvider`, `EMBED_DIM: int`, `OPENAI_API_KEY: str | None`, `WATSONX_API_KEY: str | None`, `WATSONX_PROJECT_ID: str | None`, `WATSONX_URL: str | None`. Validar que las claves condicionales estén presentes cuando el proveedor las requiera. Añadir `HYDE_ENABLED: bool = True`.
-- [ ] **IT-02** — Implementar `embed(text: str) -> list[float]` en `shared/__init__.py`
+- [x] **IT-02** — Implementar `embed(text: str) -> list[float]` en `shared/__init__.py`
   Si `EMBED_PROVIDER=openai`: llamar a `openai.embeddings.create(model="text-embedding-3-large", input=text, dimensions=EMBED_DIM)` y devolver el vector. Si `EMBED_PROVIDER=watsonx`: llamar a la API `ibm-watsonx-ai` con `ibm/granite-embedding-278m-multilingual` y dimensión 768. En ambos casos devolver `list[float]` con exactamente `EMBED_DIM` elementos.
-- [ ] **IT-03** — Implementar advertencia por desajuste de proveedor/dimensión
+- [x] **IT-03** — Implementar advertencia por desajuste de proveedor/dimensión
   Exponer `warn_if_mismatch(collection_provider: str, collection_dim: int) -> None`: si `EMBED_PROVIDER` o `EMBED_DIM` no coinciden con los parámetros pasados, emitir `logging.warning` con mensaje explícito. No lanzar excepción (AC-011 usa DEBERÍA, no DEBE).
-- [ ] **IT-04** — Añadir tipos y anotaciones mypy
+- [x] **IT-04** — Añadir tipos y anotaciones mypy
   Asegurar que `shared/__init__.py` y `config.py` pasan `mypy --strict` sin errores nuevos.

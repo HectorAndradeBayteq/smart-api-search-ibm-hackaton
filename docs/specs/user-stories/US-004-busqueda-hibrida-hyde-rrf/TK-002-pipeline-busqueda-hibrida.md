@@ -35,15 +35,15 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Implementar la función `hyde_expand(query: str, settings: Settings) -> str` en `domain/retrieval.py`
+- [x] **IT-01** — Implementar la función `hyde_expand(query: str, settings: Settings) -> str` en `domain/retrieval.py`
   Llama a la OpenAI Responses API con un prompt que pide generar una descripción hipotética de un endpoint de API a partir de `query`. Devuelve el texto expandido. Solo se invoca si `settings.HYDE_ENABLED=True`.
-- [ ] **IT-02** — Implementar la rama densa: `embed` del texto expandido (HyDE) o de `query` directamente
+- [x] **IT-02** — Implementar la rama densa: `embed` del texto expandido (HyDE) o de `query` directamente
   Llamar a `shared.embed(hyde_text if settings.HYDE_ENABLED else query)`. El vector resultante es el vector denso para el prefetch coseno.
-- [ ] **IT-03** — Implementar la rama BM25: envolver `query` original en `Document`
+- [x] **IT-03** — Implementar la rama BM25: envolver `query` original en `Document`
   Construir `Document(text=query, model="Qdrant/bm25")`. El argumento `query` es siempre el texto original, sin modificar, incluso cuando HyDE está activo.
-- [ ] **IT-04** — Lanzar ambos prefetch en paralelo y fusionar con RRF
+- [x] **IT-04** — Lanzar ambos prefetch en paralelo y fusionar con RRF
   Usar `AsyncQdrantClient.query_points()` con dos objetos `Prefetch`: uno con el vector denso (coseno, límite `top_k * 2`) y otro con el objeto Document BM25 (límite `top_k * 2`). Solicitar fusión RRF nativa de Qdrant. Devolver los `top_k` puntos fusionados como lista de `models.ScoredPoint`.
-- [ ] **IT-05** — Validar `1 ≤ top_k ≤ 10` al inicio de `search()`
+- [x] **IT-05** — Validar `1 ≤ top_k ≤ 10` al inicio de `search()`
   Lanzar `ValueError` con mensaje claro si `top_k` está fuera de rango; la capa MCP lo capturará y lo convertirá en `tool_error`.
-- [ ] **IT-06** — Añadir tipos completos y anotaciones mypy
+- [x] **IT-06** — Añadir tipos completos y anotaciones mypy
   Asegurar que `domain/retrieval.py` pasa `mypy --strict` sin errores nuevos.
