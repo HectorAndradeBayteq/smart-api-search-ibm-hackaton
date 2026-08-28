@@ -1,0 +1,14 @@
+# Configuración de metadatos de presentación por categoría
+#
+# Cada clave es un category_key (debe coincidir con el tag de la operación OpenAPI).
+# Los campos title y description son opcionales: si se omiten, se usa el título
+# y la descripción del spec como valor de presentación.
+#
+# Ejemplo:
+# payments:
+#   title: "Payments API"
+#   description: "Endpoints para procesar pagos y reembolsos"
+#
+# user-management:
+#   title: "User Management"
+#   description: "Gestión de cuentas y autenticación de usuarios"

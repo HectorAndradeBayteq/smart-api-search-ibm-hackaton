@@ -33,16 +33,16 @@ tests/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Implementar función `parse_spec(content: bytes, fmt: str) -> dict` que parsea el contenido crudo (`json` o `yaml`) y devuelve el spec como dict
+- [x] **IT-01** — Implementar función `parse_spec(content: bytes, fmt: str) -> dict` que parsea el contenido crudo (`json` o `yaml`) y devuelve el spec como dict
   Tolerar BOM al inicio del contenido; lanzar `ValueError` con mensaje claro si el formato no es reconocible o el parseo falla
-- [ ] **IT-02** — Implementar función `detect_spec_version(spec: dict) -> str` que devuelve `"oas3"` si el spec tiene campo `openapi`, o `"swagger2"` si tiene campo `swagger`; lanza `ValueError` claro si ninguno está presente
-- [ ] **IT-03** — Implementar función `get_base_url(spec: dict, version: str) -> str` que extrae la URL base del servidor
+- [x] **IT-02** — Implementar función `detect_spec_version(spec: dict) -> str` que devuelve `"oas3"` si el spec tiene campo `openapi`, o `"swagger2"` si tiene campo `swagger`; lanza `ValueError` claro si ninguno está presente
+- [x] **IT-03** — Implementar función `get_base_url(spec: dict, version: str) -> str` que extrae la URL base del servidor
   Para `oas3`: usar `servers[0].url` si existe; para `swagger2`: componer `"{schemes[0]}://{host}{basePath}"` con los campos presentes (usar cadena vacía para los ausentes)
-- [ ] **IT-04** — Implementar función `apply_text_fallback(operation: dict) -> str` que aplica la cadena de respaldo para obtener texto útil
+- [x] **IT-04** — Implementar función `apply_text_fallback(operation: dict) -> str` que aplica la cadena de respaldo para obtener texto útil
   Orden: `summary` → primera línea de `description` → `operationId` → concatenación de `description` de parámetros (separados por `, `); devolver cadena vacía si ninguna alternativa produce texto no vacío
-- [ ] **IT-05** — Implementar función `build_raw_spec(spec: dict, path: str, method: str, fmt: str, version: str) -> dict` que construye el fragmento crudo según MD-02
+- [x] **IT-05** — Implementar función `build_raw_spec(spec: dict, path: str, method: str, fmt: str, version: str) -> dict` que construye el fragmento crudo según MD-02
   Campos: `info` (copiado del spec), `servers` (lista de servidores OAS3 o lista con el objeto compuesto Swagger 2), `format`, `path`, `method` (mayúsculas), `operation` (objeto operation sin modificar)
-- [ ] **IT-06** — Implementar función `extract_operations(spec: dict, source_file: str, fmt: str) -> list[dict]` que recorre `spec["paths"]` y extrae todas las operaciones con métodos HTTP estándar
+- [x] **IT-06** — Implementar función `extract_operations(spec: dict, source_file: str, fmt: str) -> list[dict]` que recorre `spec["paths"]` y extrae todas las operaciones con métodos HTTP estándar
   Por cada operación: normalizar método a mayúsculas; llamar a `apply_text_fallback`; llamar a `build_raw_spec`; construir el dict parcial de QdrantPoint con los campos `method`, `path`, `summary` (texto de respaldo), `server_url`, `spec_format`, `spec_ref` (`source_file|METHOD|/path`), `raw_spec` (serializado como JSON), `tags`, `operationId`, `api_title`, `api_version`, `api_description`; excluir métodos no estándar (e.g. `parameters`, `summary` a nivel de path)
-- [ ] **IT-07** — Escribir pruebas unitarias en `tests/test_parser_openapi.py`
+- [x] **IT-07** — Escribir pruebas unitarias en `tests/test_parser_openapi.py`
   Cubrir: spec OAS3 con varios métodos (normalización a mayúsculas), spec Swagger 2.0 (composición de URL base con los tres campos), cadena de respaldo con `summary` presente, con solo `description` multilínea, con solo `operationId`, con solo descripciones de parámetros, spec sin ningún texto (cadena vacía), fragmento `raw_spec` con todos los campos de MD-02, spec con path sin métodos estándar (ignorado)
