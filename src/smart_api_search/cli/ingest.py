@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import sys
 import warnings
@@ -705,6 +706,49 @@ def make_marker_document(
         "summary": "(no paths declared)",
         "raw_spec": json.dumps(raw_spec_dict),
     }
+
+
+# ---------------------------------------------------------------------------
+# TK-003 US-002: Configuración de metadatos por categoría
+# ---------------------------------------------------------------------------
+
+
+def load_category_config(path: str) -> dict[str, dict[str, str]]:
+    """Carga y valida el archivo de configuración de categorías ``categories.yaml``.
+
+    Si el archivo no existe lanza ``SystemExit(1)`` imprimiendo la ruta. Si
+    tiene sintaxis YAML inválida lanza ``SystemExit(1)`` con la ruta y la
+    causa. Un archivo vacío devuelve un dict vacío (sin fallar).
+
+    Args:
+        path: Ruta al archivo YAML de configuración de categorías.
+
+    Returns:
+        Dict ``{category_key: {title?, description?}}`` con los campos presentes.
+
+    Raises:
+        SystemExit: Si el archivo no existe o tiene sintaxis YAML inválida.
+    """
+    if not os.path.exists(path):
+        print(
+            f"Error: no se encontró el archivo de configuración de categorías: {path}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    with open(path, encoding="utf-8") as fh:
+        raw = fh.read()
+
+    try:
+        data = yaml.safe_load(raw)
+    except yaml.YAMLError as exc:
+        print(f"Error: sintaxis inválida en {path}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if data is None:
+        return {}
+
+    return cast(dict[str, dict[str, str]], data)
 
 
 # ---------------------------------------------------------------------------
