@@ -5,8 +5,9 @@ Cubre: HyDE activo/inactivo, separación BM25/densa, validación top_k.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from smart_api_search.config import EmbedProvider, Settings
 
@@ -96,8 +97,9 @@ async def test_search_hyde_enabled_uses_expanded_text() -> None:
 @pytest.mark.asyncio
 async def test_search_bm25_always_receives_original_query() -> None:
     """La rama BM25 recibe siempre la consulta original, incluso con HyDE activo (AC-003)."""
-    from smart_api_search.domain import retrieval
     from qdrant_client.http import models
+
+    from smart_api_search.domain import retrieval
 
     s = _make_settings(HYDE_ENABLED=True)
     client = _make_mock_client()

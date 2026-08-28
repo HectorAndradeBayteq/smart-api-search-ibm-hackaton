@@ -45,16 +45,20 @@
 - 6 tests unitarios en verde: HyDE activo/inactivo, BM25 siempre con query original, validación top_k.
 
 ### TK-003: Composición y normalización del resultado de búsqueda
-**Estado:** Pending
-**Iniciado:**
-**Finalizado:**
-**Implementador:**
+**Estado:** Done
+**Iniciado:** 2025-07-20
+**Finalizado:** 2025-07-20
+**Implementador:** David / Claude / claude-opus-4-5
 
 **Archivos:**
-[]
++ src/smart_api_search/domain/result.py
++ src/smart_api_search/domain/params.py
+~ src/smart_api_search/domain/__init__.py
++ tests/test_result_composition.py
 
 **Notas:**
-[]
+- `get_by_spec_ref` usa `client.scroll()` con filtro por campo `spec_ref` (no `retrieve()` que filtra por ID).
+- 11 tests unitarios en verde: compose_result, call_url, spec_ref inválido, normalize_params, get_by_spec_ref.
 
 ### TK-004: Pruebas y verificabilidad del flujo de búsqueda híbrida
 **Estado:** Pending

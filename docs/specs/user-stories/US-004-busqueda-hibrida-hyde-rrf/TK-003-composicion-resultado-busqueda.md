@@ -34,15 +34,15 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Definir la dataclass `SearchResult` en `domain/result.py`
+- [x] **IT-01** — Definir la dataclass `SearchResult` en `domain/result.py`
   Campos obligatorios y opcionales según MD-03. Usar `@dataclass` con `field(default=None)` para los opcionales. El tipo de `params` es `list[dict[str, Any]]` y el de `body` es `dict[str, Any] | None`.
-- [ ] **IT-02** — Implementar parseo estricto de `spec_ref` en `compose_result()`
+- [x] **IT-02** — Implementar parseo estricto de `spec_ref` en `compose_result()`
   Dividir por `|`; verificar exactamente 3 segmentos no vacíos. Si el formato es inválido, omitir el resultado del ranking y emitir `logging.warning` (comportamiento especificado en FL-02 manejo de errores).
-- [ ] **IT-03** — Implementar construcción de `call_url`
+- [x] **IT-03** — Implementar construcción de `call_url`
   `call_url = server_url + path` donde `server_url` es el valor del campo `server_url` del payload (MD-01). Si `server_url` está vacío o ausente, `call_url` queda como cadena vacía. Nunca usar `deeplink` ni ninguna otra URL del portal.
-- [ ] **IT-04** — Implementar normalización de `params` en `domain/params.py`
+- [x] **IT-04** — Implementar normalización de `params` en `domain/params.py`
   Extraer los parámetros declarados en el objeto `operation` del payload (`raw_spec`). Inferir además los parámetros de path a partir del template (`{param}` en el path). Omitir los parámetros sin nombre. Devolver `list[dict]` con al menos `name`, `in` y `required` por entrada.
-- [ ] **IT-05** — Implementar `get_by_spec_ref(spec_ref: str, client: AsyncQdrantClient, collection: str) -> list[SearchResult]`
+- [x] **IT-05** — Implementar `get_by_spec_ref(spec_ref: str, client: AsyncQdrantClient, collection: str) -> list[SearchResult]`
   Llamar a `client.retrieve()` filtrando por el campo indexado `spec_ref`. Si no existen puntos, devolver `[]` sin lanzar excepción. Si `spec_ref` tiene formato inválido, devolver `[]` tras emitir `logging.warning`.
-- [ ] **IT-06** — Añadir tipos completos y anotaciones mypy
+- [x] **IT-06** — Añadir tipos completos y anotaciones mypy
   Asegurar que `domain/result.py` y `domain/params.py` pasan `mypy --strict` sin errores nuevos.
