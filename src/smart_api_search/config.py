@@ -1,5 +1,4 @@
 """Módulo de configuración: carga variables de entorno con validación por contexto."""
-
 from __future__ import annotations
 
 from enum import StrEnum
@@ -12,17 +11,28 @@ load_dotenv()
 
 
 class EmbedProvider(StrEnum):
+    """Proveedores de embeddings soportados."""
+
     OPENAI = "openai"
     WATSONX = "watsonx"
 
 
 class Settings(BaseSettings):
-    """Configuración del sistema leída desde variables de entorno.
+    """Configuración del sistema leída desde variables de entorno (MD-05).
 
-    Todos los campos del portal son opcionales en tiempo de carga;
-    la validación de presencia ocurre únicamente al construir el cliente
-    de portal (AC-010).
+    Todos los campos son opcionales en tiempo de carga; la validación de
+    presencia ocurre en la capa que los necesita (portal, servidor MCP, etc.).
     """
+
+    # --- Servidor MCP ---
+    MCP_HOST: str = Field(default="127.0.0.1")
+    MCP_PORT: int = Field(default=8000)
+    MCP_PATH: str = Field(default="/mcp")
+
+    # --- Qdrant Cloud ---
+    QDRANT_URL: str | None = Field(default=None)
+    QDRANT_API_KEY: str | None = Field(default=None)
+    QDRANT_COLLECTION: str = Field(default="smart-api-search")
 
     # --- Portal IBM API Connect ---
     IBM_PORTAL_HOST: str | None = Field(default=None)

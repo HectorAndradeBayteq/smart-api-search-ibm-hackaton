@@ -34,11 +34,11 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Crear `src/smart_api_search/server.py` con la instancia FastMCP
+- [x] **IT-01** — Crear `src/smart_api_search/server.py` con la instancia FastMCP
   Instanciar `mcp = FastMCP(name="smart-api-search", ...)` con `stateless_http=True`. Leer `Settings` para obtener `MCP_HOST`, `MCP_PORT` y `MCP_PATH`. Exponer `app = mcp.streamable_http_app()` (u equivalente FastMCP ≥ 2.0) como variable de módulo de nivel superior — esta es la referencia ASGI de producción.
-- [ ] **IT-02** — Implementar el middleware ASGI para rechazar peticiones GET
+- [x] **IT-02** — Implementar el middleware ASGI para rechazar peticiones GET
   Envolver `app` con un middleware ASGI puro (función o clase compatible con la interfaz ASGI 3) que inspeccione `scope["type"] == "http"` y `scope["method"] == "GET"` sobre la ruta MCP (`MCP_PATH`). Si coincide, responder `405 Method Not Allowed` con cabecera `Allow: POST, DELETE` sin llamar al siguiente handler. En cualquier otro caso, pasar el control a la app subyacente.
-- [ ] **IT-03** — Verificar que `__init__.py` no reexporta símbolos de `server.py`
+- [x] **IT-03** — Verificar que `__init__.py` no reexporta símbolos de `server.py`
   Leer `src/smart_api_search/__init__.py` y confirmar que no contiene ninguna importación de `server` ni de `app`. Si contiene alguna, eliminarla. El archivo debe quedar con el docstring de módulo solamente (estado ya verificado en el repositorio).
-- [ ] **IT-04** — Añadir tipos completos y anotaciones mypy
+- [x] **IT-04** — Añadir tipos completos y anotaciones mypy
   Asegurar que `server.py` pasa `mypy --strict` sin errores nuevos. Anotar la función/clase del middleware con los tipos ASGI estándar (`Scope`, `Receive`, `Send` de `typing` o `asgiref`).

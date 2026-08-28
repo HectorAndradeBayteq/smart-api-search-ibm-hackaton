@@ -26,16 +26,27 @@ El servidor MCP se expone sobre transporte `streamable-http` mediante FastMCP y 
 ## Criterios de aceptación
 
 - **AC-001 (Integraciones):** El servidor DEBE arrancar con uvicorn en los valores de `MCP_HOST`, `MCP_PORT` y `MCP_PATH`, con valores por defecto `127.0.0.1`, `8000` y `/mcp` respectivamente, en modo sin estado.
+  Casos de prueba: [TC-005](./test-cases/TC-005-arranque-defaults-stateless-manual.md)
 - **AC-002 (Reglas de negocio):** Un middleware DEBE interceptar peticiones `GET` al endpoint MCP y DEBE responder `405 Method Not Allowed` con cabecera `Allow: POST, DELETE`.
+  Casos de prueba: [TC-003](./test-cases/TC-003-middleware-get-405-happy.md)
 - **AC-003 (Salidas del sistema):** La herramienta `search_openapi(query, top_k=5)` DEBE devolver markdown compacto más contenido estructurado; NO DEBE devolver el JSON OpenAPI completo.
+  Casos de prueba: [TC-006](./test-cases/TC-006-search-openapi-formato-manual.md)
 - **AC-004 (Salidas del sistema):** La herramienta `get_endpoint_spec(spec_ref)` DEBE devolver markdown más contenido estructurado con el fragmento OpenAPI, la URL de llamada y el deeplink del endpoint solicitado.
+  Casos de prueba: [TC-007](./test-cases/TC-007-get-endpoint-spec-formato-manual.md)
 - **AC-005 (Fiabilidad):** Un `spec_ref` inválido o no encontrado en `get_endpoint_spec` DEBE marcarse como error de herramienta; NO DEBE propagarse como excepción del servidor.
+  Casos de prueba: [TC-004](./test-cases/TC-004-get-endpoint-spec-ref-invalido-tool-error.md)
 - **AC-006 (Interacción de usuario):** DEBE existir un prompt `find_backend_api(need)` que guíe el flujo: buscar → presentar → pedir el spec solo si el usuario lo solicita explícitamente.
+  Casos de prueba: [TC-008](./test-cases/TC-008-prompt-flujo-manual.md)
 - **AC-007 (Interacción de usuario):** Las instrucciones del servidor DEBEN indicar: usar esta base de conocimiento para descubrir APIs, no buscar en el workspace, no traducir los nombres de categoría y no pegar JSON salvo petición explícita del usuario.
+  Casos de prueba: [TC-009](./test-cases/TC-009-instructions-servidor-manual.md)
 - **AC-008 (Fiabilidad):** El servidor DEBE exponerse mediante la referencia ASGI del módulo, nunca ejecutando el módulo como `__main__`; el paquete NO DEBE reexportar símbolos que sombreen a sus propios submódulos.
+  Casos de prueba: [TC-001](./test-cases/TC-001-asgi-init-no-reexporta-simbolos-happy.md)
 - **AC-009 (Fiabilidad):** DEBE existir una verificación sobre el mismo objeto ASGI que sirve el entrypoint de producción que afirme que expone las dos herramientas (`search_openapi`, `get_endpoint_spec`) y el prompt (`find_backend_api`); importar la aplicación por un camino distinto al de producción no es suficiente.
+  Casos de prueba: [TC-002](./test-cases/TC-002-asgi-app-registra-herramientas-y-prompt-happy.md)
 - **AC-010 (Salidas del sistema):** DEBE entregarse un ejemplo de configuración de cliente MCP (`type: http` y URL) usable en IBM Bob, VS Code, Cursor y GitHub Copilot, más un script `.ps1` de arranque que use el Python del entorno virtual.
+  Casos de prueba: [TC-010](./test-cases/TC-010-config-clientes-arranque-manual.md)
 - **AC-011 (Salidas del sistema):** El README del repositorio DEBE documentar cómo registrar el servidor en IBM Bob.
+  Casos de prueba: [TC-011](./test-cases/TC-011-readme-ibm-bob-manual.md)
 
 ---
 

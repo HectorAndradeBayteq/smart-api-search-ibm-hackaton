@@ -40,13 +40,13 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Crear `start-server.ps1` en la raíz del repositorio
+- [x] **IT-01** — Crear `start-server.ps1` en la raíz del repositorio
   El script debe: (1) activar el entorno virtual si no está activo (`.venv/Scripts/Activate.ps1`); (2) lanzar uvicorn con `& ".venv/Scripts/python.exe" -m uvicorn smart_api_search.server:app --host $MCP_HOST_OR_DEFAULT --port $MCP_PORT_OR_DEFAULT`. Los valores de host y puerto se leen de variables de entorno con fallback a `127.0.0.1` y `8000` respectivamente.
-- [ ] **IT-02** — Crear el ejemplo de configuración de cliente MCP
+- [x] **IT-02** — Crear el ejemplo de configuración de cliente MCP
   Generar un bloque de configuración `type: http` + URL (`http://127.0.0.1:8000/mcp`) para cada IDE soportado. Formato por IDE: IBM Bob (`mcp.json` o equivalente), VS Code (`settings.json` → `mcp.servers`), Cursor (`.cursor/mcp.json`), GitHub Copilot (`.github/copilot-mcp.json`). El ejemplo debe ser copiable sin modificación para un servidor local con los valores por defecto.
-- [ ] **IT-03** — Actualizar el README del repositorio
+- [x] **IT-03** — Actualizar el README del repositorio
   Añadir una sección `## Servidor MCP` (o `## Registrar en el IDE`) que explique: (1) cómo arrancar con `start-server.ps1`, (2) cómo registrar el servidor en IBM Bob con el bloque de configuración del paso IT-02, (3) referencia a los demás IDEs soportados.
-- [ ] **IT-04** — Crear `tests/test_server_asgi.py` con la verificación ASGI de producción
+- [x] **IT-04** — Crear `tests/test_server_asgi.py` con la verificación ASGI de producción
   Importar `from smart_api_search.server import app` (el mismo camino que uvicorn en producción; no crear una instancia local). Usar la API de introspección de FastMCP sobre `app` (p.ej. `app.list_tools()` / `app.list_prompts()` o la interfaz equivalente de FastMCP ≥ 2.0) para obtener los nombres registrados. Afirmar: herramientas contienen `search_openapi` y `get_endpoint_spec`; prompts contienen `find_backend_api`. El test debe pasar sin credenciales reales (no arranca el servidor, solo verifica el objeto en memoria).
-- [ ] **IT-05** — Verificar que el test pasa con `pytest` y `mypy --strict`
+- [x] **IT-05** — Verificar que el test pasa con `pytest` y `mypy --strict`
   Ejecutar `pytest tests/test_server_asgi.py -v` y confirmar que el test verde. Asegurar anotaciones de tipos en `test_server_asgi.py` sin errores mypy nuevos.
