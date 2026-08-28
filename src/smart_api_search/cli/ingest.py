@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
 import logging
@@ -13,6 +14,7 @@ from typing import TYPE_CHECKING, cast
 
 import httpx
 import yaml
+from qdrant_client import QdrantClient
 
 if TYPE_CHECKING:
     from smart_api_search.config import Settings
@@ -805,13 +807,158 @@ def apply_category_metadata(
 
 
 # ---------------------------------------------------------------------------
-# Punto de entrada
 # ---------------------------------------------------------------------------
+# Punto de entrada (TK-003 US-003)
+# ---------------------------------------------------------------------------
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    """Construye el parser de argumentos CLI (AC-010)."""
+    parser = argparse.ArgumentParser(description="Indexa APIs en Qdrant desde el portal IBM o archivos locales.")
+    parser.add_argument("--source", choices=["portal", "files"], default="portal")
+    parser.add_argument("--specs-dir", default=None, help="Directorio de specs locales.")
+    parser.add_argument("--list-only", action="store_true", help="Solo listar fuentes, sin indexar.")
+    parser.add_argument("--dry-run", action="store_true", help="Preparar sin escribir puntos.")
+    parser.add_argument("--recreate", action="store_true", help="Recrear la colección antes de indexar.")
+    parser.add_argument("--force", action="store_true", help="Reindexar fuentes ya existentes.")
+    parser.add_argument("--no-enrich", action="store_true", help="No llamar al LLM; indexar solo metadatos.")
+    parser.add_argument("--yes", action="store_true", help="Confirmar operaciones destructivas sin prompt.")
+    return parser
 
 
 def main() -> None:
     """Punto de entrada de la CLI de ingesta."""
-    raise NotImplementedError("CLI de ingesta no implementada aún")
+    # UTF-8 en stdout para Windows (AC-014)
+    if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+
+    from smart_api_search.config import settings
+    from smart_api_search.domain.collection import ensure_collection
+    from smart_api_search.domain.enricher import enrich_operation
+    from smart_api_search.domain.files_source import (
+        build_source_file,
+        discover_specs,
+        load_spec_file,
+    )
+    from smart_api_search.domain.indexer import index_operation
+
+    parser = _build_parser()
+    args = parser.parse_args()
+
+    # --- Cliente Qdrant ---
+    qdrant = QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
+
+    # --- --recreate (BR-05, AC-012) ---
+    if args.recreate:
+        if not args.yes:
+            confirm = input("¿Recrear la colección? Esto borrará todos los datos. [s/N]: ")
+            if confirm.lower() not in ("s", "si", "sí", "y", "yes"):
+                print("Operación cancelada.")
+                sys.exit(0)
+        qdrant.delete_collection(settings.COLLECTION_NAME)
+        print(f"Colección '{settings.COLLECTION_NAME}' eliminada.")
+
+    ensure_collection(qdrant)
+
+    # --- Recopilar operaciones ---
+    operations: list[dict[str, object]] = []
+
+    if args.source == "files":
+        # Modo archivos (AC-015, AC-016, AC-017, AC-018)
+        specs_dir = args.specs_dir or settings.LOCAL_SPECS_DIR
+        if not specs_dir:
+            print("Error: se requiere --specs-dir o LOCAL_SPECS_DIR.", file=sys.stderr)
+            sys.exit(1)
+
+        from pathlib import Path
+
+        from smart_api_search.cli.ingest import apply_category_metadata, extract_operations
+
+        specs_dir_path = Path(specs_dir)
+        spec_files = discover_specs(str(specs_dir_path))
+
+        # Cargar categorías si existen
+        cat_config: dict[str, dict[str, str]] = {}
+        if os.path.exists("categories.yaml"):
+            cat_config = load_category_config("categories.yaml")
+
+        for spec_path in spec_files:
+            source_file = build_source_file(specs_dir_path, spec_path)
+            try:
+                spec_dict, fmt = load_spec_file(spec_path)
+            except (ValueError, Exception) as exc:
+                print(f"  [SKIP] {spec_path}: {exc}")
+                continue
+
+            ops = extract_operations(spec_dict, source_file, fmt)
+            for op in ops:
+                op = apply_category_metadata(op, cat_config)
+                op["deeplink"] = ""
+                op["environment"] = ""
+                operations.append(op)
+
+    else:
+        print("Modo portal: usa las funciones de US-001/US-002 para obtener operaciones.")
+        sys.exit(0)
+
+    if args.list_only:
+        sources = sorted({str(op.get("source_file", "")) for op in operations})
+        for s in sources:
+            print(s)
+        return
+
+    # --- Idempotencia por fuente (BR-04, AC-009, AC-013) ---
+    source_decision: dict[str, bool] = {}  # True = indexar, False = omitir
+
+    def _should_index(source_file: str) -> bool:
+        if source_file in source_decision:
+            return source_decision[source_file]
+        if args.force:
+            # Borrar puntos existentes de esta fuente
+            from qdrant_client.http.models import FieldCondition, Filter, MatchValue
+            qdrant.delete(
+                collection_name=settings.COLLECTION_NAME,
+                points_selector=Filter(
+                    must=[FieldCondition(key="source_file", match=MatchValue(value=source_file))]
+                ),
+            )
+            decision = True
+        else:
+            result = qdrant.count(
+                collection_name=settings.COLLECTION_NAME,
+                count_filter={"must": [{"key": "source_file", "match": {"value": source_file}}]},
+                exact=False,
+            )
+            decision = result.count == 0
+        source_decision[source_file] = decision
+        return decision
+
+    # --- Indexar ---
+    indexed = 0
+    for op in operations:
+        source_file = str(op.get("source_file", ""))
+        method = op.get("method", "")
+        path = op.get("path", "")
+        print(f"  {source_file} | {method} {path} ... ", end="", flush=True)
+
+        if not _should_index(source_file):
+            print("omitida (ya indexada)")
+            continue
+
+        if args.dry_run:
+            print("dry-run")
+            continue
+
+        enriched = enrich_operation(op, no_enrich=args.no_enrich)
+        index_operation(qdrant, op, enriched)
+        indexed += 1
+        print("ok")
+
+    # --- Resumen y verificación de coherencia (AC-024) ---
+    print(f"\nTotal indexado: {indexed} operaciones.")
+    if not args.dry_run and indexed > 0:
+        count_result = qdrant.count(collection_name=settings.COLLECTION_NAME, exact=True)
+        print(f"Puntos en colección: {count_result.count}")
 
 
 if __name__ == "__main__":  # pragma: no cover

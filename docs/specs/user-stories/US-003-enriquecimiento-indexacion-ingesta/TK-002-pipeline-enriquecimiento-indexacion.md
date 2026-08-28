@@ -36,11 +36,11 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Implementar `domain/enricher.py` con `enrich_operation(op: OperationRecord, no_enrich: bool = False) -> str`
+- [x] **IT-01** — Implementar `domain/enricher.py` con `enrich_operation(op: OperationRecord, no_enrich: bool = False) -> str`
   Si `no_enrich=True`, devolver el texto compuesto de los metadatos disponibles sin llamar al LLM. Si `no_enrich=False`, construir el prompt con los metadatos de la operación y llamar a la OpenAI Responses API; el texto devuelto debe tener 250–400 palabras, estar en inglés y contener propósito, capacidades, casos de uso, línea `Keywords:` y sección `Example questions users might ask:`.
-- [ ] **IT-02** — Implementar `domain/indexer.py` con `index_operation(client: QdrantClient, op: OperationRecord, enriched_text: str) -> None`
+- [x] **IT-02** — Implementar `domain/indexer.py` con `index_operation(client: QdrantClient, op: OperationRecord, enriched_text: str) -> None`
   Componer el texto indexable: `[{categoría} | {api_title} | {spec_format} | {method} {path} | {tags} | {base}]` + `"\n\n"` + `enriched_text`; el `deeplink` no forma parte del texto embebido. Generar el vector denso con `shared.get_embedding(texto_indexable)`. Construir el objeto disperso como `models.Document(text=texto_indexable, model="Qdrant/bm25")`. Construir el payload con todos los campos requeridos: `api_title`, `api_version`, `api_description`, `category`, `method`, `path`, `summary`, `description`, `tags`, `operationId`, `environment`, `server_url`, `spec_format`, `source_file`, `enriched_text`, `raw_spec` y `deeplink`. Escribir el punto en Qdrant con los dos vectores nombrados de forma simultánea; nunca escribir un punto con un solo vector.
-- [ ] **IT-03** — Derivar `spec_ref` como `{source_file}|{METHOD}|{/path}` y añadirlo al payload
+- [x] **IT-03** — Derivar `spec_ref` como `{source_file}|{METHOD}|{/path}` y añadirlo al payload
   Seguir el formato definido en ADR-005: `source_file|METHOD|/path`. Incluirlo en el payload para que el índice keyword de `spec_ref` (creado en TK-001) sea utilizable en filtros.
-- [ ] **IT-04** — Escribir pruebas unitarias en `tests/test_pipeline.py`
+- [x] **IT-04** — Escribir pruebas unitarias en `tests/test_pipeline.py`
   Prueba de `enrich_operation` con LLM mockeado: verificar que con `no_enrich=False` se llama a la API y que con `no_enrich=True` no se llama. Prueba de `index_operation` con cliente Qdrant mockeado: capturar el argumento del punto escrito y verificar (a) que el objeto en la rama dispersa es instancia de `models.Document`, (b) que los dos vectores están presentes simultáneamente en el punto, (c) que el payload contiene todos los campos obligatorios.

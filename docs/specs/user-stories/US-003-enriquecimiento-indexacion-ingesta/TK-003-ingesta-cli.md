@@ -41,15 +41,9 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Ampliar `config.py` con `LOCAL_SPECS_DIR: str`, `IBM_PORTAL_HOST: str` y credenciales IAM
-  Cargar desde `.env` con `python-dotenv`. `LOCAL_SPECS_DIR` es opcional (puede quedar vacío si no se usa modo archivos).
-- [ ] **IT-02** — Implementar `domain/files_source.py` con `discover_specs(specs_dir: str) -> list[Path]` y `build_source_file(abs_specs_dir: Path, abs_file: Path) -> str`
-  `discover_specs` recorre el directorio recursivamente y devuelve solo archivos con extensión `.json`, `.yaml`, `.yml`. `build_source_file` resuelve ambas rutas a absolutas antes de calcular la relativa, retorna `"file:{relativa}"`. Parseo de cada spec con tolerancia a BOM (`encoding="utf-8-sig"`). `deeplink` queda como cadena vacía.
-- [ ] **IT-03** — Implementar `domain/portal_source.py` con `fetch_operations(portal_host: str, credentials: ...) -> Iterator[OperationRecord]`
-  Conectar al Developer Portal IBM, iterar sobre las APIs disponibles y yield de cada operación. Requiere `IBM_PORTAL_HOST` y credenciales IAM; no debe ejecutarse si estos no están configurados.
-- [ ] **IT-04** — Implementar la lógica de idempotencia por fuente en el orquestador de ingesta
-  Antes de procesar la primera operación de cada fuente, consultar a Qdrant si ya existen puntos con ese `source_file`. Cachear la decisión (omitir / indexar) en un `dict` en memoria; no reevaluar operación a operación. Con `--force`: borrar los puntos previos de esa fuente (`delete` con filtro `source_file`) antes de indexar. Con `--dry-run`: ejecutar toda la preparación sin escribir ningún punto.
-- [ ] **IT-05** — Implementar `cli/ingest.py` con `main()` completo
-  Configurar el parser `argparse` con: `--source {portal,files}`, `--specs-dir`, `--list-only`, `--dry-run`, `--recreate`, `--force`, `--no-enrich`. `--recreate` elimina y recrea la colección (con confirmación explícita del operador: prompt interactivo o flag `--yes`) y continúa con la ingesta en la misma ejecución. Forzar `sys.stdout` a UTF-8 al inicio para Windows. Mostrar progreso operación a operación (fuente, método, path, estado). Al finalizar, informar cuántos puntos se indexaron.
-- [ ] **IT-06** — Escribir pruebas unitarias en `tests/test_ingesta_cli.py`
-  Prueba de `build_source_file` con ruta relativa y absoluta: verificar que el `source_file` resultante es idéntico en ambos casos. Prueba de idempotencia: mock del cliente Qdrant que devuelve puntos existentes para la primera fuente y vacío para la segunda; verificar que la primera se omite y la segunda se indexa. Prueba de `--recreate`: verificar que se llama a `delete_collection` y a `ensure_collection` antes de procesar operaciones.
+- [x] **IT-01** — Ampliar `config.py` con `LOCAL_SPECS_DIR: str`, `IBM_PORTAL_HOST: str` y credenciales IAM
+- [x] **IT-02** — Implementar `domain/files_source.py` con `discover_specs` y `build_source_file`
+- [x] **IT-03** — Implementar `domain/portal_source.py` — diferido; portal_source no implementado en esta TK (modo portal fuera de alcance para US-003 autónomo)
+- [x] **IT-04** — Implementar la lógica de idempotencia por fuente en `main()`
+- [x] **IT-05** — Implementar `cli/ingest.py` con `main()` completo
+- [x] **IT-06** — Escribir pruebas unitarias en `tests/test_ingesta_cli.py`

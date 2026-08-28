@@ -6,3 +6,7 @@ OpenAI o Watsonx para obtener embeddings — toda llamada debe pasar por aquí
 """
 
 from __future__ import annotations
+
+from smart_api_search.shared.embeddings import get_embedding
+
+__all__ = ["get_embedding"]
