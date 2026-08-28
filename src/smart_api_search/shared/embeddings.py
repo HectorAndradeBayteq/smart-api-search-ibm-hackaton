@@ -105,10 +105,37 @@ def _embed_openai(text: str) -> list[float]:
 
 def _embed_watsonx(text: str) -> list[float]:
     """Genera embedding con IBM Granite multilingual (AC-026, ADR-014)."""
-    embedder = WatsonxEmbeddings(
-        model_id="ibm/granite-embedding-278m-multilingual",
-        url=settings.WATSONX_URL,
-        apikey=settings.WATSONX_API_KEY,
+    if not settings.WATSONX_API_KEY or not settings.WATSONX_URL or not settings.WATSONX_PROJECT_ID:
+        raise RuntimeError(
+            "Faltan WATSONX_API_KEY, WATSONX_URL o WATSONX_PROJECT_ID "
+            "cuando EMBED_PROVIDER=watsonx"
+        )
+
+    model_id = "ibm/granite-embedding-278m-multilingual"
+
+    # langchain-ibm (opcional): API distinta a ibm-watsonx-ai nativo.
+    try:
+        from langchain_ibm import WatsonxEmbeddings as LcWatsonxEmbeddings
+
+        embedder = LcWatsonxEmbeddings(
+            model_id=model_id,
+            url=settings.WATSONX_URL,
+            apikey=settings.WATSONX_API_KEY,
+            project_id=settings.WATSONX_PROJECT_ID,
+        )
+        return list(embedder.embed_query(text))
+    except ImportError:
+        pass
+
+    from ibm_watsonx_ai import Credentials
+    from ibm_watsonx_ai.foundation_models import Embeddings
+
+    embedder = Embeddings(
+        model_id=model_id,
+        credentials=Credentials(
+            url=settings.WATSONX_URL,
+            api_key=settings.WATSONX_API_KEY,
+        ),
         project_id=settings.WATSONX_PROJECT_ID,
     )
     return list(embedder.embed_query(text))

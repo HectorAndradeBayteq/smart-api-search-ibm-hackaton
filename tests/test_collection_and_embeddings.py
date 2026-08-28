@@ -88,7 +88,7 @@ def test_get_embedding_openai_provider() -> None:
 
 
 def test_get_embedding_watsonx_provider() -> None:
-    """get_embedding con EMBED_PROVIDER=watsonx debe llamar al SDK de IBM."""
+    """get_embedding con EMBED_PROVIDER=watsonx debe llamar al SDK nativo de IBM."""
     from smart_api_search.config import EmbedProvider
     from smart_api_search.shared import embeddings
 
@@ -105,10 +105,17 @@ def test_get_embedding_watsonx_provider() -> None:
 
     with (
         patch.object(embeddings, "settings", mock_settings),
-        patch.object(embeddings, "WatsonxEmbeddings", return_value=mock_instance),
+        patch(
+            "ibm_watsonx_ai.foundation_models.Embeddings",
+            return_value=mock_instance,
+        ) as mock_embeddings_cls,
+        patch("ibm_watsonx_ai.Credentials"),
     ):
         result = embeddings.get_embedding("hola mundo")
+
         assert result == [0.4, 0.5, 0.6]
+        mock_embeddings_cls.assert_called_once()
+        mock_instance.embed_query.assert_called_once_with("hola mundo")
 
 
 def test_shared_exports_get_embedding() -> None:
