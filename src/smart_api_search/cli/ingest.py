@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import sys
 import warnings
 from typing import TYPE_CHECKING, cast
 
 import httpx
+import yaml
 
 if TYPE_CHECKING:
     from smart_api_search.config import Settings
@@ -337,6 +339,281 @@ def process_portal_apis_attachments_errors(
         else:
             successes.append(detail)
     return successes, errors
+
+
+# ---------------------------------------------------------------------------
+# TK-001 US-002: Parser de operaciones OpenAPI
+# ---------------------------------------------------------------------------
+
+#: Métodos HTTP estándar reconocidos por el parser (en minúsculas para comparación)
+_HTTP_METHODS: frozenset[str] = frozenset(
+    {"get", "post", "put", "delete", "patch", "head", "options", "trace"}
+)
+
+
+def parse_spec(content: bytes, fmt: str) -> dict[str, object]:
+    """Parsea el contenido crudo de un spec OpenAPI y devuelve el dict resultante.
+
+    Tolera BOM UTF-8 al inicio del contenido. Soporta los formatos ``json`` y
+    ``yaml``. Lanza ``ValueError`` con mensaje descriptivo si el formato no es
+    reconocible o el parseo falla.
+
+    Args:
+        content: Bytes del spec (puede comenzar con BOM UTF-8).
+        fmt: Formato del contenido. Valores válidos: ``"json"`` o ``"yaml"``.
+
+    Returns:
+        El spec como diccionario Python.
+
+    Raises:
+        ValueError: Si ``fmt`` no es ``"json"`` ni ``"yaml"``, o si el parseo falla.
+    """
+    bom = b"\xef\xbb\xbf"
+    if content.startswith(bom):
+        content = content[len(bom) :]
+
+    text = content.decode("utf-8", errors="replace")
+
+    if fmt == "json":
+        try:
+            result = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Error al parsear json: {exc}") from exc
+        return dict(cast(dict[str, object], result))
+    elif fmt == "yaml":
+        try:
+            result = yaml.safe_load(text)
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Error al parsear yaml: {exc}") from exc
+        if not isinstance(result, dict):
+            raise ValueError(f"El contenido yaml no es un mapping: {type(result)}")
+        return cast(dict[str, object], result)
+    else:
+        raise ValueError(f"Formato no reconocido: '{fmt}'. Se esperaba 'json' o 'yaml'.")
+
+
+def detect_spec_version(spec: dict[str, object]) -> str:
+    """Detecta la versión del spec OpenAPI.
+
+    Devuelve ``"oas3"`` si el spec contiene el campo ``openapi``, o
+    ``"swagger2"`` si contiene el campo ``swagger``. Lanza ``ValueError``
+    si ninguno está presente.
+
+    Args:
+        spec: Spec OpenAPI/Swagger ya parseado como diccionario.
+
+    Returns:
+        ``"oas3"`` o ``"swagger2"``.
+
+    Raises:
+        ValueError: Si el spec no tiene campo ``openapi`` ni ``swagger``.
+    """
+    if "openapi" in spec:
+        return "oas3"
+    if "swagger" in spec:
+        return "swagger2"
+    raise ValueError(
+        "No se pudo determinar la versión del spec: no contiene campo 'openapi' ni 'swagger'."
+    )
+
+
+def get_base_url(spec: dict[str, object], version: str) -> str:
+    """Extrae la URL base del servidor del spec.
+
+    Para OAS3 usa ``servers[0].url`` si existe. Para Swagger 2.0 compone
+    ``"{schemes[0]}://{host}{basePath}"`` con los campos disponibles; si alguno
+    falta usa cadena vacía para ese segmento.
+
+    Args:
+        spec: Spec OpenAPI/Swagger ya parseado como diccionario.
+        version: Versión detectada; ``"oas3"`` o ``"swagger2"``.
+
+    Returns:
+        URL base como cadena. Cadena vacía si no se pueden extraer datos.
+    """
+    if version == "oas3":
+        servers = cast(list[dict[str, object]], spec.get("servers", []))
+        if servers:
+            return str(servers[0].get("url", ""))
+        return ""
+
+    # Swagger 2.0
+    schemes = cast(list[str], spec.get("schemes", []))
+    scheme = schemes[0] if schemes else ""
+    host = str(spec.get("host", ""))
+    base_path = str(spec.get("basePath", ""))
+
+    if not host:
+        return ""
+
+    base = f"{scheme}://{host}" if scheme else host
+
+    return f"{base}{base_path}"
+
+
+def apply_text_fallback(operation: dict[str, object]) -> str:
+    """Obtiene texto útil de una operación aplicando la cadena de respaldo.
+
+    Orden de preferencia: ``summary`` → primera línea de ``description`` →
+    ``operationId`` → concatenación de ``description`` de parámetros
+    (separados por ``", "``). Devuelve cadena vacía si ninguna alternativa
+    produce texto no vacío.
+
+    Args:
+        operation: Objeto operación del spec OpenAPI (sin modificar).
+
+    Returns:
+        Texto de respaldo como cadena. Nunca ``None``; puede ser vacío.
+    """
+    summary = str(operation.get("summary", "")).strip()
+    if summary:
+        return summary
+
+    description = str(operation.get("description", "")).strip()
+    if description:
+        return description.splitlines()[0].strip()
+
+    operation_id = str(operation.get("operationId", "")).strip()
+    if operation_id:
+        return operation_id
+
+    params = cast(list[dict[str, object]], operation.get("parameters", []))
+    param_descs = [
+        str(p.get("description", "")).strip()
+        for p in params
+        if str(p.get("description", "")).strip()
+    ]
+    if param_descs:
+        return ", ".join(param_descs)
+
+    return ""
+
+
+def build_raw_spec(
+    spec: dict[str, object],
+    path: str,
+    method: str,
+    fmt: str,
+    version: str,
+) -> dict[str, object]:
+    """Construye el fragmento crudo MD-02 de una operación OpenAPI.
+
+    Campos del fragmento: ``info``, ``servers`` (lista OAS3 o lista con
+    objeto compuesto Swagger 2), ``format``, ``path``, ``method``
+    (mayúsculas) y ``operation`` (objeto operation sin modificar).
+
+    Args:
+        spec: Spec completo como diccionario.
+        path: Path de la operación (p. ej. ``"/users"``).
+        method: Método HTTP en mayúsculas (p. ej. ``"GET"``).
+        fmt: Formato del spec original (``"json"`` o ``"yaml"``).
+        version: Versión del spec (``"oas3"`` o ``"swagger2"``).
+
+    Returns:
+        Diccionario con los seis campos de MD-02.
+    """
+    info = cast(dict[str, object], spec.get("info", {}))
+
+    if version == "oas3":
+        servers: list[dict[str, object]] = cast(list[dict[str, object]], spec.get("servers", []))
+    else:
+        # Swagger 2.0: construir objeto servidor compuesto
+        schemes = cast(list[str], spec.get("schemes", []))
+        servers = [
+            {
+                "url": get_base_url(spec, "swagger2"),
+                "schemes": schemes,
+                "host": str(spec.get("host", "")),
+                "basePath": str(spec.get("basePath", "")),
+            }
+        ]
+
+    paths_obj = cast(dict[str, dict[str, object]], spec.get("paths", {}))
+    path_item = paths_obj.get(path, {})
+    operation = cast(dict[str, object], path_item.get(method.lower(), {}))
+
+    return {
+        "info": info,
+        "servers": servers,
+        "format": fmt,
+        "path": path,
+        "method": method,
+        "operation": operation,
+    }
+
+
+def extract_operations(
+    spec: dict[str, object],
+    source_file: str,
+    fmt: str,
+) -> list[dict[str, object]]:
+    """Extrae todas las operaciones OpenAPI de la sección ``paths`` del spec.
+
+    Para cada operación: normaliza el método HTTP a mayúsculas; aplica la
+    cadena de respaldo de texto (``apply_text_fallback``); construye el
+    fragmento crudo MD-02 (``build_raw_spec``); compone el dict parcial de
+    QdrantPoint con los campos requeridos por MD-01.
+
+    Sólo procesa métodos HTTP estándar (GET, POST, PUT, DELETE, PATCH, HEAD,
+    OPTIONS, TRACE). Las claves de path-item que no sean métodos HTTP estándar
+    (p. ej. ``"parameters"``, ``"summary"``) se ignoran.
+
+    Args:
+        spec: Spec completo como diccionario.
+        source_file: Identificador de la fuente (p. ej. ``"portal:my-api"``).
+        fmt: Formato del spec original (``"json"`` o ``"yaml"``).
+
+    Returns:
+        Lista de dicts parciales de QdrantPoint, uno por operación encontrada.
+    """
+    version = detect_spec_version(spec)
+    server_url = get_base_url(spec, version)
+    info = cast(dict[str, object], spec.get("info", {}))
+    api_title = str(info.get("title", ""))
+    api_version = str(info.get("version", ""))
+    api_description = str(info.get("description", ""))
+
+    paths = cast(dict[str, dict[str, object]], spec.get("paths", {}))
+    operations: list[dict[str, object]] = []
+
+    for path, path_item in paths.items():
+        for key, operation_obj in path_item.items():
+            if key.lower() not in _HTTP_METHODS:
+                continue
+
+            method = key.upper()
+            operation = cast(dict[str, object], operation_obj)
+
+            summary = apply_text_fallback(operation)
+            description = str(operation.get("description", ""))
+            tags = cast(list[str], operation.get("tags", []))
+            operation_id = str(operation.get("operationId", ""))
+
+            raw_spec_dict = build_raw_spec(spec, path, method, fmt, version)
+            raw_spec_json = json.dumps(raw_spec_dict)
+
+            spec_ref = f"{source_file}|{method}|{path}"
+
+            operations.append(
+                {
+                    "method": method,
+                    "path": path,
+                    "summary": summary,
+                    "description": description,
+                    "server_url": server_url,
+                    "spec_format": fmt,
+                    "source_file": source_file,
+                    "spec_ref": spec_ref,
+                    "raw_spec": raw_spec_json,
+                    "tags": tags,
+                    "operationId": operation_id,
+                    "api_title": api_title,
+                    "api_version": api_version,
+                    "api_description": api_description,
+                }
+            )
+
+    return operations
 
 
 # ---------------------------------------------------------------------------
