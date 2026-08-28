@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/smart_api_search/__init__.py
+src/smart_api_search/config.py
+src/smart_api_search.egg-info/PKG-INFO
+src/smart_api_search.egg-info/SOURCES.txt
+src/smart_api_search.egg-info/dependency_links.txt
+src/smart_api_search.egg-info/entry_points.txt
+src/smart_api_search.egg-info/requires.txt
+src/smart_api_search.egg-info/top_level.txt
+src/smart_api_search/cli/__init__.py
+src/smart_api_search/cli/ingest.py
+src/smart_api_search/cli/serve.py
+src/smart_api_search/domain/__init__.py
+src/smart_api_search/shared/__init__.py

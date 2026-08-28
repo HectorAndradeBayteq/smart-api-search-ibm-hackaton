@@ -1,0 +1,3 @@
+[console_scripts]
+smart-api-ingest = smart_api_search.cli.ingest:main
+smart-api-serve = smart_api_search.cli.serve:main
