@@ -1,7 +1,7 @@
 # Progreso
 
 ## US-002-extraccion-endpoints-metadatos
-**Estado:** In Progress
+**Estado:** Done
 **Tipo:** historia de usuario
 **Fecha de creación:** 2025-07-20 00:00
 **Ultima actualizacion:** 2025-07-20 00:00
@@ -58,13 +58,14 @@
 []
 
 ### TK-004: Aplicación de metadatos de presentación a operaciones
-**Estado:** Pending
-**Iniciado:** —
-**Finalizado:** —
+**Estado:** Done
+**Iniciado:** 2025-07-20 00:00
+**Finalizado:** 2025-07-20 00:00
 **Implementador:** David / Claude / claude-sonnet-4-5
 
 **Archivos:**
-[]
+~ src/smart_api_search/cli/ingest.py
++ tests/test_category_metadata.py
 
 **Notas:**
 []

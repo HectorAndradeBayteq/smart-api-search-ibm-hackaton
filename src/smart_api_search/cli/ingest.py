@@ -752,6 +752,59 @@ def load_category_config(path: str) -> dict[str, dict[str, str]]:
 
 
 # ---------------------------------------------------------------------------
+# TK-004 US-002: Aplicación de metadatos de presentación
+# ---------------------------------------------------------------------------
+
+
+def resolve_category_key(operation: dict[str, object]) -> str:
+    """Determina la clave de categoría de una operación a partir de sus tags.
+
+    Devuelve el primer elemento de ``operation["tags"]`` si la lista es no
+    vacía y el primer tag no está en blanco. En cualquier otro caso devuelve
+    cadena vacía ``""``; nunca lanza excepción.
+
+    Args:
+        operation: Dict parcial de QdrantPoint con campo ``tags``.
+
+    Returns:
+        Clave de categoría como cadena, o ``""`` si no hay tag válido.
+    """
+    tags = cast(list[str], operation.get("tags", []))
+    if tags and str(tags[0]).strip():
+        return str(tags[0]).strip()
+    return ""
+
+
+def apply_category_metadata(
+    operation: dict[str, object],
+    category_config: dict[str, dict[str, str]],
+) -> dict[str, object]:
+    """Enriquece la operación con el campo ``category`` según MD-04.
+
+    Si la clave de categoría tiene entrada en ``category_config`` con ``title``
+    o ``description``, usa esos valores. En caso contrario usa ``api_title``
+    como ``category``. No muta el dict original.
+
+    Args:
+        operation: Dict parcial de QdrantPoint a enriquecer.
+        category_config: Mapa ``{category_key: {title?, description?}}``
+            cargado por ``load_category_config``.
+
+    Returns:
+        Nuevo dict con el campo ``category`` añadido.
+    """
+    key = resolve_category_key(operation)
+    entry = category_config.get(key, {}) if key else {}
+
+    if entry.get("title") or entry.get("description"):
+        category = key
+    else:
+        category = str(operation.get("api_title", ""))
+
+    return {**operation, "category": category}
+
+
+# ---------------------------------------------------------------------------
 # Punto de entrada
 # ---------------------------------------------------------------------------
 
