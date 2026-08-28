@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "skills": {
+    "alm-install": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "others/utils/skills/alm-install/SKILL.md",
+      "computedHash": "8b6f6a60e0f64d53591199fd7d66ecc17e5ea5030563c52d22979cc854c04841"
+    },
+    "arch-audit": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/arch-audit/SKILL.md",
+      "computedHash": "24c774f7029beb32db812b33af7bc584840826d7d4c681a7c56df9a9255e6ec2"
+    },
+    "arch-discover": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/arch-discover/SKILL.md",
+      "computedHash": "37fd2cb019dae6426d75408c37945780e661bb69e54a5d2f38a2c717152eef37"
+    },
+    "arch-init": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/arch-init/SKILL.md",
+      "computedHash": "ae20e53ffb3f0a4533da5a78a6e2fa5b7271f91b23b8a1465094b2d4e0d4cdee"
+    },
+    "arch-manage": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/arch-manage/SKILL.md",
+      "computedHash": "2ac69dec886e6a47a76f4e2f243ad67ef9c367da3024bf322265652e30e2eade"
+    },
+    "code-review": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/code-review/SKILL.md",
+      "computedHash": "31f540cbc904388acf0d6b8e4625614bccdf1968ee0200a42944ae24a511bc60"
+    },
+    "design-define": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/design-define/SKILL.md",
+      "computedHash": "165d33f3c0d555d09514d00f0f82c6a1652c643ec564e3b6f3f2a6c1efc7453f"
+    },
+    "git-commit": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/git-commit/SKILL.md",
+      "computedHash": "e117d93776dda569c5ace82eaf98f7323da6c19595b3bb93ec3f1d85c2986312"
+    },
+    "prompt-validate": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "others/utils/skills/prompt-validate/SKILL.md",
+      "computedHash": "96380ddbc42a0322a8f12f503a81f5c245d31541e9ffa4d02d41a0a6d438ae30"
+    },
+    "quality-check": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/quality-check/SKILL.md",
+      "computedHash": "28b51fdce52552b658b12d6fb246f88496405e6174cb32332f95a07652434e12"
+    },
+    "test-define": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/test-define/SKILL.md",
+      "computedHash": "8c95d74550f057e755b624993aa15cc39c7ad719914a9fd3956f1065b058bbab"
+    },
+    "trace-validate": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/trace-validate/SKILL.md",
+      "computedHash": "93045893193d9e55b31764c318436bf7eee776e20e4d99db4355aa9eecd73f11"
+    },
+    "work-define": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/work-define/SKILL.md",
+      "computedHash": "30ba77ba1649f6df2274a3c8b12d0d3e778b0d77ae7be4935170503401c03f76"
+    },
+    "work-implement": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/work-implement/SKILL.md",
+      "computedHash": "5aca26d279a46442fc181b57b10024cab2f2727ab74ab23901e1007b84b1fb1d"
+    },
+    "work-integrate": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/work-integrate/SKILL.md",
+      "computedHash": "a13a63afeb58b326a4c573766afa180f97d24ad708e6065087f65382e088846f"
+    },
+    "work-plan": {
+      "source": "juanca202/sdd-devkit",
+      "sourceType": "github",
+      "skillPath": "skills/work-plan/SKILL.md",
+      "computedHash": "bc39cc394b91ecf1a12b686c1d5c72030865f2ab58d34b89a41d78c657647ac4"
+    }
+  }
+}

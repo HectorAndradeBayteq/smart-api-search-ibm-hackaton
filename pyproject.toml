@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart-api-search"
+version = "0.1.0"
+description = "Servidor MCP de búsqueda semántica sobre catálogos OpenAPI"
+requires-python = ">=3.12"
+dependencies = [
+    # Servidor MCP
+    "fastmcp==3.4.7",
+    "uvicorn[standard]==0.52.4",
+    # Base vectorial
+    "qdrant-client==1.19.0",
+    # Embeddings / LLM — OpenAI
+    "openai==3.5.0",
+    # Embeddings — IBM Watsonx
+    "ibm-watsonx-ai==1.7.1",
+    # Parsing OpenAPI / YAML
+    "pyyaml==6.0.3",
+    # HTTP
+    "httpx==0.28.1",
+    # Configuración (.env)
+    "python-dotenv==1.2.3",
+    # Tipado / utilidades
+    "typing-extensions==4.16.0",
+]
+
+[project.scripts]
+smart-api-ingest = "smart_api_search.cli.ingest:main"
+smart-api-serve  = "smart_api_search.cli.serve:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ---------------------------------------------------------------------------
+# Ruff — linter + formatter
+# ---------------------------------------------------------------------------
+[tool.ruff]
+src = ["src"]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+# ---------------------------------------------------------------------------
+# Mypy — tipado estricto
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short -m 'not integration'"
+markers = [
+    "integration: pruebas que llaman a servicios externos reales (excluidas por defecto)",
+]
+filterwarnings = ["error"]
+
+# ---------------------------------------------------------------------------
+# Coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["src/smart_api_search"]
+omit = ["*/tests/*", "*/cli/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
