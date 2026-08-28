@@ -48,16 +48,19 @@
 - `download_attachment` lanza `ValueError` (no `SystemExit`) para que el llamador pueda capturar el error de una API individual sin abortar el proceso (AC-005 + AC-009).
 
 ### TK-003: Procesamiento de fuentes, deeplinks y manejo de errores
-**Estado:** Pending
-**Iniciado:** —
-**Finalizado:** —
-**Implementador:** —
+**Estado:** Done
+**Iniciado:** 2025-07-21 00:00
+**Finalizado:** 2025-07-21 00:00
+**Implementador:** — / Claude / claude-sonnet-4-5
 
 **Archivos:**
-[]
+~ src/smart_api_search/cli/ingest.py
++ tests/test_portal_processing.py
 
 **Notas:**
-[]
+- IT-03 (validación de configuración al inicio de `--source portal`) reutiliza la lógica ya existente en `build_portal_client` implementada en TK-001; las validaciones de `IBM_PORTAL_HOST` e `IBM_API_KEY` están consolidadas ahí.
+- IT-05 (integración en flujo principal) implementa `process_portal_apis_attachments_errors` como orquestador de clasificación; la conexión con la capa de indexación quedará en TKs posteriores.
 
 **Decisiones adicionales:**
-[]
+- `process_portal_apis_attachments_errors` usa `logging.error` (no `print` + `sys.exit`) para el error de API sin attachment, de modo que el proceso continúa con las demás APIs (AC-005 + AC-009). El llamador puede inspeccionar la lista `errors` para decidir qué hacer.
+- `build_deeplink_map` no incluye pares ausentes en el diccionario; el llamador usa `.get((path, método), "")` para obtener cadena vacía en pares sin recurso (AC-007).

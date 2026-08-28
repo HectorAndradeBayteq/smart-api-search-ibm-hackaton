@@ -246,6 +246,100 @@ async def download_attachment(
 
 
 # ---------------------------------------------------------------------------
+# TK-003: Procesamiento de fuentes, deeplinks y manejo de errores
+# ---------------------------------------------------------------------------
+
+
+def assign_source_name(slug: str, seen: set[str]) -> str:
+    """Asigna un source_name estable y único con formato portal:{slug}.
+
+    Si el nombre base ya existe en `seen`, añade sufijo numérico incremental
+    desde -2 hasta encontrar un nombre libre. Actualiza `seen` antes de retornar.
+
+    Args:
+        slug: Identificador de la API en el portal (campo name u equivalente).
+        seen: Conjunto de source_names ya asignados en esta ejecución; se
+            modifica in-place añadiendo el nombre devuelto.
+
+    Returns:
+        Source_name único con formato ``portal:{slug}`` o ``portal:{slug}-N``.
+    """
+    base = f"portal:{slug}"
+    candidate = base
+    counter = 2
+    while candidate in seen:
+        candidate = f"{base}-{counter}"
+        counter += 1
+    seen.add(candidate)
+    return candidate
+
+
+def build_deeplink_map(
+    api_detail: dict[str, object],
+) -> dict[tuple[str, str], str]:
+    """Construye el mapa de deeplinks (path, MÉTODO) → URL para una API.
+
+    Recorre la sección ``resources`` del detalle de la API. Para cada recurso
+    con ``path``, ``method`` y ``url``, añade la entrada al mapa con la clave
+    ``(path, MÉTODO)`` en mayúsculas. Si el detalle no contiene ``resources``,
+    devuelve un diccionario vacío (no lanza excepción).
+
+    Para consultar un par ausente, usar ``.get((path, método), "")``.
+
+    Args:
+        api_detail: Objeto detalle de la API tal como lo devuelve el portal.
+
+    Returns:
+        Diccionario ``{(path, MÉTODO): url_deeplink}`` donde los métodos son
+        siempre mayúsculas. Los pares sin recurso asociado no aparecen en el
+        mapa; el llamador debe tratar las claves ausentes como cadena vacía.
+    """
+    resources = cast(list[dict[str, object]], api_detail.get("resources", []))
+    deeplink_map: dict[tuple[str, str], str] = {}
+    for resource in resources:
+        path = str(resource.get("path", ""))
+        method = str(resource.get("method", "")).upper()
+        url = str(resource.get("url", ""))
+        if path and method:
+            deeplink_map[(path, method)] = url
+    return deeplink_map
+
+
+def process_portal_apis_attachments_errors(
+    apis_details: list[dict[str, object]],
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Clasifica los detalles de APIs según si tienen attachment OpenAPI.
+
+    Itera los detalles; las APIs sin attachments se registran con logging.error
+    (mensaje claro, sin traza técnica) y se acumulan en la lista de errores.
+    Las que sí tienen attachments se acumulan en la lista de éxitos.
+    No aborta el proceso ante fallos individuales (AC-005, AC-009).
+
+    Args:
+        apis_details: Lista de objetos detalle de API devueltos por el portal.
+
+    Returns:
+        Tupla ``(successes, errors)`` donde cada elemento es una lista de
+        detalles de API. ``errors`` contiene las APIs sin attachment; el
+        llamador decide si continúa o no con las demás operaciones.
+    """
+    successes: list[dict[str, object]] = []
+    errors: list[dict[str, object]] = []
+    for detail in apis_details:
+        api_id = str(detail.get("id", "desconocida"))
+        attachments = detail.get("attachments", [])
+        if not attachments:
+            logger.error(
+                "La API '%s' no tiene attachment OpenAPI; se omite del procesamiento.",
+                api_id,
+            )
+            errors.append(detail)
+        else:
+            successes.append(detail)
+    return successes, errors
+
+
+# ---------------------------------------------------------------------------
 # Punto de entrada
 # ---------------------------------------------------------------------------
 
