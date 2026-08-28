@@ -30,13 +30,16 @@
 ---
 
 ### TK-002: Herramientas search_openapi y get_endpoint_spec
-**Estado:** Pending
-**Iniciado:** —
-**Finalizado:** —
+**Estado:** Done
+**Iniciado:** 2025-08-28 15:00
+**Finalizado:** 2025-08-28 15:15
 **Implementador:** Héctor Andrade / Claude / claude-opus-4-5
 
 **Archivos:**
-[]
+~ src/smart_api_search/server.py
+~ src/smart_api_search/config.py
++ src/smart_api_search/domain/retrieval.py
++ src/smart_api_search/domain/result.py
 
 **Notas:**
 []

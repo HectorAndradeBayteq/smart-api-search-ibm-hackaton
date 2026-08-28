@@ -39,11 +39,11 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Implementar `search_openapi` como herramienta MCP en `server.py`
+- [x] **IT-01** — Implementar `search_openapi` como herramienta MCP en `server.py`
   Decorar con `@mcp.tool`. Firma: `async def search_openapi(query: str, top_k: int = 5) -> str`. Validar `1 ≤ top_k ≤ 10`; si falla, lanzar `McpError` con mensaje claro (no `ValueError` ni excepción de servidor). Llamar a `domain.retrieval.search(query, top_k)` para obtener la lista de `ScoredPoint`; por cada punto llamar a `domain.result.compose_result(point, ranking)` para componer un `SearchResult` (MD-03). Formatear la lista como markdown compacto (campos: ranking, method, path, summary, call_url, spec_ref) seguido del contenido estructurado. NO incluir el JSON completo del spec.
-- [ ] **IT-02** — Implementar `get_endpoint_spec` como herramienta MCP en `server.py`
+- [x] **IT-02** — Implementar `get_endpoint_spec` como herramienta MCP en `server.py`
   Decorar con `@mcp.tool`. Firma: `async def get_endpoint_spec(spec_ref: str) -> str`. Llamar a `domain.result.get_by_spec_ref(spec_ref, client, settings.QDRANT_COLLECTION)`; si devuelve lista vacía o `spec_ref` es inválido, lanzar `McpError` con mensaje de error de herramienta (no propagar excepción). Cuando se encuentre el punto: extraer el fragmento `raw_spec` (MD-02), construir `call_url = server_url + path` (nunca el `deeplink`), y devolver markdown más contenido estructurado con los tres elementos: fragmento OpenAPI, `call_url` y `deeplink`.
-- [ ] **IT-03** — Inicializar el cliente Qdrant de forma reutilizable en el módulo
+- [x] **IT-03** — Inicializar el cliente Qdrant de forma reutilizable en el módulo
   Crear un `AsyncQdrantClient` único a nivel de módulo (o con patrón de factory cargado una sola vez al arrancar el servidor) usando `Settings`. Las herramientas lo referencian sin crear una conexión nueva por llamada.
-- [ ] **IT-04** — Añadir tipos completos y anotaciones mypy
+- [x] **IT-04** — Añadir tipos completos y anotaciones mypy
   Asegurar que las dos herramientas y el cliente Qdrant en `server.py` pasan `mypy --strict` sin errores nuevos.

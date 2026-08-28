@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     MCP_PORT: int = Field(default=8000)
     MCP_PATH: str = Field(default="/mcp")
 
+    # --- Qdrant Cloud ---
+    QDRANT_URL: str | None = Field(default=None)
+    QDRANT_API_KEY: str | None = Field(default=None)
+    QDRANT_COLLECTION: str = Field(default="smart-api-search")
+
     # --- Portal IBM API Connect ---
     IBM_PORTAL_HOST: str | None = Field(default=None)
     IBM_PORTAL_AUTH: bool = Field(default=False)

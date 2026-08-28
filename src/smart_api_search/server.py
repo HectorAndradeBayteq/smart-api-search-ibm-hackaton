@@ -11,15 +11,20 @@ No ejecutar como ``__main__``; ver ADR-013.
 """
 from __future__ import annotations
 
+import json
 from collections.abc import Awaitable, Callable, MutableMapping
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from fastmcp.server.http import StarletteWithLifespan
+from qdrant_client import AsyncQdrantClient
 
 from smart_api_search.config import Settings
+from smart_api_search.domain import result as domain_result
+from smart_api_search.domain import retrieval as domain_retrieval
 
-_settings = Settings()
+_settings: Settings = Settings()
 
 # ---------------------------------------------------------------------------
 # Tipos ASGI estándar (PEP 3333 / ASGI 3)
@@ -30,6 +35,16 @@ Message = MutableMapping[str, Any]
 Receive = Callable[[], Awaitable[Message]]
 Send = Callable[[Message], Awaitable[None]]
 ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
+
+# ---------------------------------------------------------------------------
+# Cliente Qdrant — instancia única a nivel de módulo (IT-03)
+# ---------------------------------------------------------------------------
+
+_qdrant_client: AsyncQdrantClient = AsyncQdrantClient(
+    url=_settings.QDRANT_URL,
+    api_key=_settings.QDRANT_API_KEY,
+    check_compatibility=False,
+)
 
 # ---------------------------------------------------------------------------
 # Instancia FastMCP — punto único de registro de herramientas y prompts
@@ -44,6 +59,141 @@ mcp: FastMCP = FastMCP(
         "No pegues JSON del spec a menos que el usuario lo solicite explícitamente."
     ),
 )
+
+# ---------------------------------------------------------------------------
+# Herramienta: search_openapi (AC-003 / API-01)
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool
+async def search_openapi(query: str, top_k: int = 5) -> str:
+    """Busca endpoints de API en lenguaje natural.
+
+    Ejecuta el flujo híbrido HyDE + embedding denso + BM25 con fusión RRF
+    y devuelve hasta ``top_k`` resultados en markdown compacto más contenido
+    estructurado.  No incluye el JSON OpenAPI completo.
+
+    Args:
+        query: Consulta en lenguaje natural.
+        top_k: Número de resultados a devolver. Rango: 1–10. Por defecto 5.
+
+    Returns:
+        Markdown compacto con los resultados encontrados.
+
+    Raises:
+        ToolError: Si ``top_k`` está fuera del rango [1, 10].
+    """
+    if not (1 <= top_k <= 10):
+        raise ToolError(f"top_k debe estar entre 1 y 10 (recibido: {top_k})")
+
+    scored_points: list[dict[str, Any]] = await domain_retrieval.search(query, top_k)
+
+    if not scored_points:
+        return "_No se encontraron resultados para la consulta._"
+
+    results: list[dict[str, Any]] = [
+        domain_result.compose_result(point, ranking)
+        for ranking, point in enumerate(scored_points, start=1)
+    ]
+
+    # --- Formato markdown compacto ---
+    lines: list[str] = ["## Resultados de búsqueda\n"]
+    for r in results:
+        lines.append(
+            f"**{r['ranking']}.** `{r['method']} {r['path']}` — {r.get('summary', '')}\n"
+            f"   Categoría: {r.get('category', '—')} · "
+            f"URL: `{r.get('call_url', '')}` · "
+            f"spec_ref: `{r.get('spec_ref', '')}`\n"
+        )
+
+    lines.append("\n---\n")
+    lines.append("```json\n" + json.dumps(results, ensure_ascii=False, indent=2) + "\n```")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Herramienta: get_endpoint_spec (AC-004 / AC-005 / BR-02 / API-02)
+# ---------------------------------------------------------------------------
+
+_SPEC_REF_SEGMENTS = 3
+
+
+def _validate_spec_ref(spec_ref: str) -> None:
+    """Valida que spec_ref tenga exactamente 3 segmentos no vacíos (source|METHOD|/path).
+
+    Args:
+        spec_ref: Referencia de la operación a validar.
+
+    Raises:
+        ToolError: Si el formato es inválido (BR-02 / AC-005).
+    """
+    if not spec_ref:
+        raise ToolError(
+            "spec_ref no puede estar vacío. "
+            "Formato esperado: 'source_file|METHOD|/path'"
+        )
+    parts = spec_ref.split("|")
+    if len(parts) != _SPEC_REF_SEGMENTS or any(not p for p in parts):
+        raise ToolError(
+            f"spec_ref inválido: {spec_ref!r}. "
+            "Debe tener exactamente 3 segmentos no vacíos separados por '|': "
+            "'source_file|METHOD|/path'"
+        )
+
+
+@mcp.tool
+async def get_endpoint_spec(spec_ref: str) -> str:
+    """Recupera el fragmento OpenAPI completo de un endpoint por su spec_ref.
+
+    Devuelve markdown más contenido estructurado con el fragmento OpenAPI
+    (MD-02), la URL de llamada y el deeplink.  Un ``spec_ref`` inválido o
+    no encontrado se trata como error de herramienta (BR-02 / AC-005).
+
+    Args:
+        spec_ref: Referencia del endpoint en formato ``source_file|METHOD|/path``.
+
+    Returns:
+        Markdown con el fragmento OpenAPI, call_url y deeplink.
+
+    Raises:
+        ToolError: Si spec_ref tiene formato inválido o el endpoint no se encuentra.
+    """
+    _validate_spec_ref(spec_ref)
+
+    points: list[dict[str, Any]] = domain_result.get_by_spec_ref(
+        spec_ref,
+        _qdrant_client,
+        _settings.QDRANT_COLLECTION,
+    )
+
+    if not points:
+        raise ToolError(
+            f"Endpoint no encontrado: {spec_ref!r}. "
+            "Verifica que el spec_ref sea correcto y que la colección esté indexada."
+        )
+
+    point = points[0]
+    payload: dict[str, Any] = point.get("payload", {})
+    raw_spec_str: str = str(payload.get("raw_spec", "{}"))
+    deeplink: str = str(payload.get("deeplink", ""))
+    server_url: str = str(payload.get("server_url", ""))
+    path: str = str(payload.get("path", ""))
+    call_url: str = server_url + path
+
+    try:
+        raw_spec: dict[str, Any] = json.loads(raw_spec_str)
+    except json.JSONDecodeError:
+        raw_spec = {"raw": raw_spec_str}
+
+    lines: list[str] = [
+        f"## Spec: `{spec_ref}`\n",
+        f"**URL de llamada:** `{call_url}`",
+        f"**Deeplink:** {deeplink or '—'}\n",
+        "### Fragmento OpenAPI\n",
+        "```json\n" + json.dumps(raw_spec, ensure_ascii=False, indent=2) + "\n```",
+    ]
+    return "\n".join(lines)
+
 
 # ---------------------------------------------------------------------------
 # Middleware ASGI — rechaza peticiones GET en la ruta MCP (AC-002 / BR-01)
