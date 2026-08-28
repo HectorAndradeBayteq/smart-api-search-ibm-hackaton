@@ -27,15 +27,25 @@ El sistema tiene dos modos de autenticación frente al portal: con token IAM (`I
 ## Criterios de aceptación
 
 - **AC-001 (Integraciones):** Si `IBM_PORTAL_AUTH=true`, el sistema DEBE obtener el token de acceso con `POST {IBM_TOKEN_URL}/{IBM_INSTANCE_ID}/apikeys/token` y cuerpo `{"apikey": ...}` y DEBE enviar la cabecera `Authorization: bearer <token>` en todas las llamadas al portal.
+  Casos de prueba: [TC-001](./test-cases/TC-001-autenticacion-iam-token-happy.md) · [TC-002](./test-cases/TC-002-autenticacion-iam-credenciales-invalidas-error.md)
 - **AC-002 (Integraciones):** Si `IBM_PORTAL_AUTH=false`, el sistema NO DEBE solicitar token ni enviar cabecera `Authorization`; las variables IAM PUEDEN estar vacías o ausentes.
+  Casos de prueba: [TC-003](./test-cases/TC-003-sin-autenticacion-happy.md)
 - **AC-003 (Integraciones):** Si `IBM_PORTAL_VERIFY_SSL=false`, el sistema DEBE desactivar la verificación SSL y DEBE silenciar los avisos de certificado no confiable.
+  Casos de prueba: [TC-004](./test-cases/TC-004-ssl-verificacion-desactivada-happy.md) · [TC-005](./test-cases/TC-005-ssl-verificacion-activa-error.md)
 - **AC-004 (Integraciones):** El sistema DEBE listar APIs con paginación `GET /apis?page=N` y DEBE continuar hasta cubrir el total indicado por el campo `count` de la respuesta.
+  Casos de prueba: [TC-006](./test-cases/TC-006-paginacion-listado-apis-happy.md) · [TC-007](./test-cases/TC-007-paginacion-count-cero-limite.md)
 - **AC-005 (Integraciones):** El sistema DEBE obtener el detalle `GET /apis/{id}` en paralelo con un máximo de 12 peticiones en vuelo simultáneo, conservando el orden; el fallo de un detalle NO DEBE abortar el descubrimiento del resto.
+  Casos de prueba: [TC-008](./test-cases/TC-008-descarga-paralela-detalle-apis-happy.md) · [TC-009](./test-cases/TC-009-descarga-paralela-fallo-parcial-error.md) · [TC-010](./test-cases/TC-010-descarga-paralela-limite-exacto-concurrencia.md)
 - **AC-006 (Procesamiento de datos):** El sistema DEBE asignar a cada fuente un `source_name` estable con formato `portal:{slug}`; ante slugs duplicados DEBE añadir un sufijo numérico para que sean únicos.
+  Casos de prueba: [TC-011](./test-cases/TC-011-source-name-slug-unico-happy.md) · [TC-012](./test-cases/TC-012-source-name-slug-duplicado-sufijo.md)
 - **AC-007 (Procesamiento de datos):** El sistema DEBE construir un mapa de deeplink `(path, MÉTODO) → URL`; si no existe recurso para un par, el valor DEBE ser cadena vacía.
+  Casos de prueba: [TC-013](./test-cases/TC-013-mapa-deeplinks-par-existente-happy.md) · [TC-014](./test-cases/TC-014-mapa-deeplinks-par-inexistente-cadena-vacia.md)
 - **AC-008 (Integraciones):** El sistema DEBE descargar el attachment OpenAPI completo en formato JSON o YAML, tolerando BOM al inicio; NO DEBE reconstruir el spec desde `resources[]`.
+  Casos de prueba: [TC-015](./test-cases/TC-015-descarga-attachment-json-bom-happy.md) · [TC-016](./test-cases/TC-016-descarga-attachment-yaml-bom-happy.md) · [TC-017](./test-cases/TC-017-descarga-attachment-sin-openapi-error.md)
 - **AC-009 (Casos de uso):** El sistema DEBE fallar con un mensaje claro y sin traza técnica si falta `IBM_PORTAL_HOST`, si falta `IBM_API_KEY` con autenticación activa, o si una API no tiene attachment OpenAPI.
+  Casos de prueba: [TC-018](./test-cases/TC-018-error-portal-host-ausente.md) · [TC-019](./test-cases/TC-019-error-ibm-key-ausente-con-auth.md) · [TC-020](./test-cases/TC-020-error-api-sin-attachment-mensaje-claro.md)
 - **AC-010 (Fiabilidad):** La configuración del portal DEBE ser opcional en tiempo de carga. Ninguna variable del portal DEBE impedir arrancar el sistema en modo archivos ni ejecutar la suite de pruebas.
+  Casos de prueba: [TC-021](./test-cases/TC-021-arranque-sin-variables-portal-modo-archivos.md) · [TC-022](./test-cases/TC-022-suite-pruebas-sin-variables-portal.md)
 
 ---
 

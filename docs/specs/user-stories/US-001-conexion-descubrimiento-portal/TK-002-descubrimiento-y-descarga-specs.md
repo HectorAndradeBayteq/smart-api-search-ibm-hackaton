@@ -32,17 +32,17 @@ tests/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Implementar función `list_all_apis(client) -> list[dict]` que itera `GET /apis?page=N` mientras haya páginas, usando el campo `count` de la primera respuesta para calcular el número total de páginas
+- [x] **IT-01** — Implementar función `list_all_apis(client) -> list[dict]` que itera `GET /apis?page=N` mientras haya páginas, usando el campo `count` de la primera respuesta para calcular el número total de páginas
   Retorna la lista completa de objetos API; lanza error claro si la respuesta no contiene `count`; no hace recursión, itera con bucle `while`
-- [ ] **IT-02** — Implementar función `fetch_api_details(client, api_ids, max_concurrent=12) -> list[dict | None]` que descarga `GET /apis/{id}` en paralelo con `asyncio.Semaphore(12)`, conservando el orden de la lista de entrada
+- [x] **IT-02** — Implementar función `fetch_api_details(client, api_ids, max_concurrent=12) -> list[dict | None]` que descarga `GET /apis/{id}` en paralelo con `asyncio.Semaphore(12)`, conservando el orden de la lista de entrada
   El fallo de una petición individual produce `None` en esa posición y registra una advertencia (`logging.warning`), sin propagar la excepción; al finalizar, el llamador filtra los `None`
-- [ ] **IT-03** — Implementar función `download_attachment(client, api_detail) -> tuple[bytes, str]` que extrae la URL del attachment OpenAPI del detalle de la API y descarga el contenido crudo
+- [x] **IT-03** — Implementar función `download_attachment(client, api_detail) -> tuple[bytes, str]` que extrae la URL del attachment OpenAPI del detalle de la API y descarga el contenido crudo
   Devuelve `(contenido_bytes, formato)` donde `formato` es `"json"` o `"yaml"` inferido de la extensión o cabecera `Content-Type`; lanza error claro con mensaje sin traza técnica si el detalle no contiene attachment
-- [ ] **IT-04** — Implementar la eliminación del BOM (`\ufeff`) al inicio del contenido descargado antes de pasarlo al parser
+- [x] **IT-04** — Implementar la eliminación del BOM (`\ufeff`) al inicio del contenido descargado antes de pasarlo al parser
   Aplicar tanto en modo texto (decodificado) como en modo bytes: `content.lstrip(b'\xef\xbb\xbf')` para bytes, `text.lstrip('\ufeff')` para str; nunca intentar reconstruir el spec desde `resources[]`
-- [ ] **IT-05** — Integrar `list_all_apis`, `fetch_api_details` y `download_attachment` en el flujo principal de `ingest.py` para el modo `--source portal`
+- [x] **IT-05** — Integrar `list_all_apis`, `fetch_api_details` y `download_attachment` en el flujo principal de `ingest.py` para el modo `--source portal`
   Conectar con el cliente de TK-001; pasar los resultados hacia las funciones de parsing (TK-003); respetar `--dry-run` (preparar sin escribir ni descargar attachments)
-- [ ] **IT-06** — Escribir pruebas unitarias en `tests/test_portal_discovery.py` con mocks de `httpx.AsyncClient`
+- [x] **IT-06** — Escribir pruebas unitarias en `tests/test_portal_discovery.py` con mocks de `httpx.AsyncClient`
   Cubrir: paginación correcta con varias páginas, paginación con una sola página, fallo de detalle individual sin abortar el resto, descarga de attachment JSON, descarga de attachment YAML con BOM, ausencia de attachment (error claro)
 
 ## Observaciones

@@ -29,19 +29,23 @@
 - `build_portal_client` crea un `AsyncClient` temporal sin `base_url` para la obtención del token, y uno definitivo con `base_url=IBM_PORTAL_HOST` para el descubrimiento.
 
 ### TK-002: Descubrimiento paginado y descarga de specs OpenAPI
-**Estado:** Pending
-**Iniciado:** —
-**Finalizado:** —
-**Implementador:** —
+**Estado:** Done
+**Iniciado:** 2025-07-21 00:00
+**Finalizado:** 2025-07-21 00:00
+**Implementador:** — / Claude / claude-sonnet-4-5
 
 **Archivos:**
-[]
+~ src/smart_api_search/cli/ingest.py
++ tests/test_portal_discovery.py
 
 **Notas:**
-[]
+- IT-05 (integración en flujo principal `--source portal`) se implementó estructuralmente: las funciones `list_all_apis`, `fetch_api_details` y `download_attachment` están disponibles y exportadas, listas para conectar con el parsing de TK-003. El orquestador de alto nivel (comando `main`) queda pendiente hasta TK-003.
+- La estructura del campo `attachments` en el detalle del portal se asume con campo `url`; deberá ajustarse al inspeccionar el portal real (observación de TK-002).
 
 **Decisiones adicionales:**
-[]
+- Se usó `cast` de `typing` en lugar de `type: ignore` para satisfacer mypy estricto en los accesos a `dict[str, object]`.
+- `fetch_api_details` usa `asyncio.create_task` + `asyncio.gather` para garantizar el orden; el semáforo controla la concurrencia interna.
+- `download_attachment` lanza `ValueError` (no `SystemExit`) para que el llamador pueda capturar el error de una API individual sin abortar el proceso (AC-005 + AC-009).
 
 ### TK-003: Procesamiento de fuentes, deeplinks y manejo de errores
 **Estado:** Pending
