@@ -196,6 +196,47 @@ async def get_endpoint_spec(spec_ref: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Prompt: find_backend_api (AC-006)
+# ---------------------------------------------------------------------------
+
+
+@mcp.prompt
+def find_backend_api(need: str) -> str:
+    """Guía al IDE por el flujo de búsqueda de API: buscar → presentar → pedir spec.
+
+    Instruye al modelo a invocar ``search_openapi`` con la necesidad del usuario,
+    presentar los resultados de forma legible y preguntar si desea el spec completo
+    antes de invocar ``get_endpoint_spec``.
+
+    Args:
+        need: Descripción de la necesidad del usuario (lenguaje natural).
+
+    Returns:
+        Mensaje de usuario que instruye el flujo de búsqueda de API.
+    """
+    return (
+        f"Necesito encontrar un endpoint de API para: {need}\n\n"
+        "Por favor:\n"
+        "1. Invoca `search_openapi(query=<need>)` con la necesidad anterior.\n"
+        "2. Presenta los resultados al usuario con: ranking, método HTTP, path y summary.\n"
+        "   Ejemplo: '1. POST /users — Crea un nuevo usuario'\n"
+        "3. Pregunta al usuario si desea ver el spec completo de algún resultado "
+        "**antes** de invocar `get_endpoint_spec`.\n"
+        "   Solo invoca `get_endpoint_spec(spec_ref=<ref>)` si el usuario lo pide "
+        "explícitamente.\n\n"
+        "---\n"
+        f"I need to find an API endpoint for: {need}\n\n"
+        "Please:\n"
+        "1. Call `search_openapi(query=<need>)` with the need above.\n"
+        "2. Present results to the user with: ranking, HTTP method, path and summary.\n"
+        "   Example: '1. POST /users — Create a new user'\n"
+        "3. Ask the user if they want to see the full spec of any result "
+        "**before** calling `get_endpoint_spec`.\n"
+        "   Only call `get_endpoint_spec(spec_ref=<ref>)` if the user explicitly asks."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Middleware ASGI — rechaza peticiones GET en la ruta MCP (AC-002 / BR-01)
 # ---------------------------------------------------------------------------
 
