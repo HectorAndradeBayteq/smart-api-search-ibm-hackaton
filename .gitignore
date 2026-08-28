@@ -101,6 +101,7 @@ target/
 *.swo
 *~
 .DS_Store
+.agents/
 
 # Build outputs
 dist/
