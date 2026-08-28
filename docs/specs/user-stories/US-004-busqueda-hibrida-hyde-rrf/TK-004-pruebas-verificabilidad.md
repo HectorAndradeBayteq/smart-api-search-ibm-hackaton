@@ -39,13 +39,13 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Crear `conftest.py` con fixtures reutilizables
+- [x] **IT-01** — Crear `conftest.py` con fixtures reutilizables
   `settings_openai()`: Settings con `EMBED_PROVIDER=openai`, `EMBED_DIM=1024`, claves ficticias. `settings_watsonx()`: Settings con `EMBED_PROVIDER=watsonx`, `EMBED_DIM=768`. `scored_point_factory()`: función que devuelve un `ScoredPoint` con payload mínimo válido (todos los campos de MD-01 requeridos). `mock_qdrant_client()`: `AsyncQdrantClient` simulado que devuelve puntos sintéticos.
-- [ ] **IT-02** — Escribir `test_shared_embeddings.py`
+- [x] **IT-02** — Escribir `test_shared_embeddings.py`
   Casos: `embed()` con `EMBED_PROVIDER=openai` llama a `openai.embeddings.create` con el modelo y dimensión correctos; `embed()` con `EMBED_PROVIDER=watsonx` llama al cliente Watsonx con el modelo y dimensión correctos; `warn_if_mismatch()` emite `logging.warning` cuando proveedor o dimensión no coinciden; `warn_if_mismatch()` no emite nada cuando ambos coinciden.
-- [ ] **IT-03** — Escribir `test_retrieval_pipeline.py`
+- [x] **IT-03** — Escribir `test_retrieval_pipeline.py`
   Casos: con `HYDE_ENABLED=True` se llama al LLM y el vector denso se genera a partir del texto HyDE; con `HYDE_ENABLED=False` no se llama al LLM y el vector denso se genera a partir de `query` directamente; en ambos casos la rama BM25 recibe `Document(text=query, model="Qdrant/bm25")` con el texto original sin modificar; `top_k=0` y `top_k=11` lanzan `ValueError`; `top_k=1` y `top_k=10` son válidos.
-- [ ] **IT-04** — Escribir `test_result_composition.py`
+- [x] **IT-04** — Escribir `test_result_composition.py`
   Casos: `compose_result()` produce un `SearchResult` con `ranking` correcto y todos los campos de MD-03 presentes; `call_url` es `server_url + path` (no el deeplink); un `spec_ref` con 2 segmentos o segmento vacío es rechazado (resultado omitido, warning emitido); `normalize_params()` incluye params inferidos del template del path y omite los sin nombre; `get_by_spec_ref()` devuelve `[]` sin excepción ante punto inexistente; `get_by_spec_ref()` devuelve `[]` ante `spec_ref` con formato inválido.
-- [ ] **IT-05** — Verificar cobertura con `pytest-cov`
+- [x] **IT-05** — Verificar cobertura con `pytest-cov`
   La suite debe alcanzar ≥ 80 % de cobertura de línea en `shared/__init__.py`, `domain/retrieval.py`, `domain/result.py` y `domain/params.py`. Incluir `--cov-fail-under=80` en la invocación.

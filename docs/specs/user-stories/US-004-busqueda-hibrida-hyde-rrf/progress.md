@@ -1,7 +1,7 @@
 # Progreso
 
 ## US-004-busqueda-hibrida-hyde-rrf
-**Estado:** In Progress
+**Estado:** Done
 **Tipo:** historia de usuario
 **Fecha de creación:** 2025-07-20 00:00
 **Ultima actualizacion:** 2025-07-20 00:00
@@ -61,13 +61,16 @@
 - 11 tests unitarios en verde: compose_result, call_url, spec_ref inválido, normalize_params, get_by_spec_ref.
 
 ### TK-004: Pruebas y verificabilidad del flujo de búsqueda híbrida
-**Estado:** Pending
-**Iniciado:**
-**Finalizado:**
-**Implementador:**
+**Estado:** Done
+**Iniciado:** 2025-07-20
+**Finalizado:** 2025-07-20
+**Implementador:** David / Claude / claude-opus-4-5
 
 **Archivos:**
-[]
++ tests/conftest.py
++ tests/test_shared_embeddings.py
 
 **Notas:**
-[]
+- Los tests de TK-002 y TK-003 (`test_retrieval_pipeline.py`, `test_result_composition.py`) se escribieron durante sus TKs respectivas (ciclo TDD).
+- Cobertura con `--cov`: incompatibilidad pre-existente entre numpy y pytest-cov en este entorno Windows falla en coverage collection cuando se combina con `qdrant_client`/`numpy`. Los tests pasan todos (162/162) sin `--cov`.
+- `domain/params.py` alcanza 95% de cobertura de línea cuando se mide en aislamiento.
