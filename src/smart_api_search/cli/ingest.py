@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import sys
 import warnings
 from typing import TYPE_CHECKING, cast
@@ -584,8 +585,8 @@ def extract_operations(
             method = key.upper()
             operation = cast(dict[str, object], operation_obj)
 
-            summary = apply_text_fallback(operation)
-            description = str(operation.get("description", ""))
+            summary = clean_text(apply_text_fallback(operation))
+            description = clean_text(str(operation.get("description", "")))
             tags = cast(list[str], operation.get("tags", []))
             operation_id = str(operation.get("operationId", ""))
 
@@ -614,6 +615,96 @@ def extract_operations(
             )
 
     return operations
+
+
+# ---------------------------------------------------------------------------
+# TK-002 US-002: Limpieza de texto y documento marcador
+# ---------------------------------------------------------------------------
+
+
+def clean_text(text: str) -> str:
+    """Limpia el texto de una operación OpenAPI eliminando marcado de documentación.
+
+    Aplica en orden: (a) elimina macros de plantilla tipo Hugo/Jinja
+    (``{{% … %}}``, ``{{< … >}}``, ``{{ … }}``); (b) elimina bloques de
+    admonición RST (``.. note::``, ``.. warning::``, ``.. tip::``, etc.) y
+    Markdown (``!!! note``, ``!!! warning``); (c) colapsa espacios internos
+    múltiples (incluidas tabulaciones) en un solo espacio; (d) colapsa tres o
+    más saltos de línea consecutivos en dos; (e) aplica ``strip()``.
+
+    La función es pura (sin efectos secundarios) e idempotente:
+    ``clean_text(clean_text(x)) == clean_text(x)``.
+
+    Args:
+        text: Texto original de la operación (puede contener markup).
+
+    Returns:
+        Texto limpio, sin macros ni admoniciones ni espacios redundantes.
+    """
+    if not text:
+        return text
+
+    # (a) Macros Hugo/Jinja: {{% ... %}},  {{< ... >}},  {{ ... }}
+    result = re.sub(r"\{%[^%]*%\}", "", text)
+    result = re.sub(r"\{\{<[^>]*>\}\}", "", result)
+    result = re.sub(r"\{\{%[^%]*%\}\}", "", result)
+    result = re.sub(r"\{\{[^}]*\}\}", "", result)
+
+    # (b1) Admoniciones RST: líneas que comienzan con ".. <palabra>::"
+    result = re.sub(r"^\.\. \w+::\s*$", "", result, flags=re.MULTILINE)
+
+    # (b2) Admoniciones Markdown: líneas que comienzan con "!!! <palabra>"
+    result = re.sub(r"^!!!\s+\w+.*$", "", result, flags=re.MULTILINE)
+
+    # (c) Colapsar tabulaciones y espacios múltiples en un solo espacio
+    #     (solo dentro de cada línea, sin cruzar saltos de línea)
+    result = re.sub(r"[^\S\n]+", " ", result)
+
+    # (d) Colapsar tres o más saltos de línea consecutivos en dos
+    result = re.sub(r"\n{3,}", "\n\n", result)
+
+    # (e) Strip
+    return result.strip()
+
+
+def make_marker_document(
+    spec: dict[str, object],
+    source_file: str,
+    fmt: str,
+) -> dict[str, object]:
+    """Genera un documento marcador para specs OpenAPI sin sección ``paths``.
+
+    Cuando un spec no declara ``paths`` (o lo declara vacío), este documento
+    garantiza que la API no desaparezca en silencio del índice (AC-005). El
+    marcador pasa por el mismo pipeline de indexación que una operación normal.
+
+    Args:
+        spec: Spec completo como diccionario (sin ``paths`` o con ``paths: {}``).
+        source_file: Identificador de la fuente (p. ej. ``"portal:my-api"``).
+        fmt: Formato del spec original (``"json"`` o ``"yaml"``).
+
+    Returns:
+        Dict parcial de QdrantPoint con todos los campos obligatorios del marcador.
+    """
+    info = cast(dict[str, object], spec.get("info", {}))
+    api_title = str(info.get("title", ""))
+    api_version = str(info.get("version", ""))
+    api_description = str(info.get("description", ""))
+
+    raw_spec_dict: dict[str, object] = {"info": info, "format": fmt}
+
+    return {
+        "source_file": source_file,
+        "spec_format": fmt,
+        "api_title": api_title,
+        "api_version": api_version,
+        "api_description": api_description,
+        "method": "MARKER",
+        "path": "/",
+        "spec_ref": f"{source_file}|MARKER|/",
+        "summary": "(no paths declared)",
+        "raw_spec": json.dumps(raw_spec_dict),
+    }
 
 
 # ---------------------------------------------------------------------------

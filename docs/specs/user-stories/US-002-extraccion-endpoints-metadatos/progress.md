@@ -25,13 +25,14 @@
 []
 
 ### TK-002: Limpieza de texto y marcador para specs sin paths
-**Estado:** Pending
-**Iniciado:** —
-**Finalizado:** —
+**Estado:** Done
+**Iniciado:** 2025-07-20 00:00
+**Finalizado:** 2025-07-20 00:00
 **Implementador:** David / Claude / claude-sonnet-4-5
 
 **Archivos:**
-[]
+~ src/smart_api_search/cli/ingest.py
++ tests/test_text_cleaning.py
 
 **Notas:**
 []
