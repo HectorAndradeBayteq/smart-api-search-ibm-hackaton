@@ -29,16 +29,20 @@
 - `get_embedding` se mantiene como alias para no romper el código de ingesta existente que ya lo usa.
 
 ### TK-002: Pipeline de búsqueda híbrida
-**Estado:** Pending
-**Iniciado:**
-**Finalizado:**
-**Implementador:**
+**Estado:** Done
+**Iniciado:** 2025-07-20
+**Finalizado:** 2025-07-20
+**Implementador:** David / Claude / claude-opus-4-5
 
 **Archivos:**
-[]
++ src/smart_api_search/domain/retrieval.py
+~ src/smart_api_search/domain/__init__.py
++ tests/test_retrieval_pipeline.py
 
 **Notas:**
-[]
+- `hyde_expand()` y `search()` implementados como funciones asíncronas en `domain/retrieval.py`.
+- `search` re-exportado desde `domain/__init__.py`.
+- 6 tests unitarios en verde: HyDE activo/inactivo, BM25 siempre con query original, validación top_k.
 
 ### TK-003: Composición y normalización del resultado de búsqueda
 **Estado:** Pending
