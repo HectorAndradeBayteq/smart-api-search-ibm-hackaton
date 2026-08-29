@@ -247,7 +247,15 @@ async def test_build_portal_client_raises_on_missing_api_key_with_auth() -> None
 
 def test_settings_instantiable_without_portal_vars() -> None:
     """TC-021 — Settings se puede instanciar sin ninguna variable del portal."""
-    s = Settings()  # Sin IBM_PORTAL_HOST ni otras vars del portal
+    # Valores explícitos sobreescriben .env local (p. ej. en desarrollo con credenciales).
+    s = Settings(
+        IBM_PORTAL_AUTH=False,
+        IBM_PORTAL_VERIFY_SSL=True,
+        IBM_PORTAL_HOST=None,
+        IBM_TOKEN_URL=None,
+        IBM_INSTANCE_ID=None,
+        IBM_API_KEY=None,
+    )
     assert s.IBM_PORTAL_AUTH is False
     assert s.IBM_PORTAL_VERIFY_SSL is True
     assert s.IBM_PORTAL_HOST is None
