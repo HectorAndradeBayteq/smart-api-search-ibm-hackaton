@@ -110,6 +110,8 @@ Two adoption choices:
 
 Embedding provider is configurable ([ADR-014](docs/adr/ADR-014-proveedor-embeddings-openai-watsonx.md)): **OpenAI** (`text-embedding-3-large`) or **IBM watsonx.ai** (`ibm/granite-embedding-278m-multilingual`).
 
+**Related demo:** [`src/documentation-alternative`](src/documentation-alternative/README.md) shows the upstream path when an API has no documentation yet — a Bob documenter agent turns undocumented .NET code into OpenAPI and publishes it to a Developer Portal, after which Smart API Search ingests it with the same pipeline as any other catalog source.
+
 ---
 
 ## How IBM Bob 2.0 was used

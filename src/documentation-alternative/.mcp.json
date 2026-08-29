@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "devportal": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "${CLAUDE_PROJECT_DIR}/mcp-devportal/server.py"
+      ],
+      "env": {
+        "DEVPORTAL_MODE": "mock",
+        "DEVPORTAL_CATALOG": "sandbox",
+        "DEVPORTAL_STORE": "${CLAUDE_PROJECT_DIR}/portal-store",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}
