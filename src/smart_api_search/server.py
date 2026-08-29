@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Awaitable, Callable, MutableMapping
+from dataclasses import asdict
 from typing import Any
 
 from fastmcp import FastMCP
@@ -23,6 +24,7 @@ from qdrant_client import AsyncQdrantClient
 from smart_api_search.config import Settings
 from smart_api_search.domain import result as domain_result
 from smart_api_search.domain import retrieval as domain_retrieval
+from smart_api_search.domain.result import SearchResult
 
 _settings: Settings = Settings()
 
@@ -86,28 +88,38 @@ async def search_openapi(query: str, top_k: int = 5) -> str:
     if not (1 <= top_k <= 10):
         raise ToolError(f"top_k debe estar entre 1 y 10 (recibido: {top_k})")
 
-    scored_points: list[dict[str, Any]] = await domain_retrieval.search(query, top_k)
+    try:
+        scored_points = await domain_retrieval.search(
+            query, top_k, _qdrant_client, _settings
+        )
+    except ValueError as exc:
+        raise ToolError(str(exc)) from exc
 
-    if not scored_points:
+    results: list[SearchResult] = []
+    for ranking, point in enumerate(scored_points, start=1):
+        composed = domain_result.compose_result(point, ranking)
+        if composed is not None:
+            results.append(composed)
+
+    if not results:
         return "_No se encontraron resultados para la consulta._"
-
-    results: list[dict[str, Any]] = [
-        domain_result.compose_result(point, ranking)
-        for ranking, point in enumerate(scored_points, start=1)
-    ]
 
     # --- Formato markdown compacto ---
     lines: list[str] = ["## Resultados de búsqueda\n"]
     for r in results:
         lines.append(
-            f"**{r['ranking']}.** `{r['method']} {r['path']}` — {r.get('summary', '')}\n"
-            f"   Categoría: {r.get('category', '—')} · "
-            f"URL: `{r.get('call_url', '')}` · "
-            f"spec_ref: `{r.get('spec_ref', '')}`\n"
+            f"**{r.ranking}.** `{r.method} {r.path}` — {r.summary or ''}\n"
+            f"   Categoría: {r.category or '—'} · "
+            f"URL: `{r.call_url}` · "
+            f"spec_ref: `{r.spec_ref}`\n"
         )
 
     lines.append("\n---\n")
-    lines.append("```json\n" + json.dumps(results, ensure_ascii=False, indent=2) + "\n```")
+    lines.append(
+        "```json\n"
+        + json.dumps([asdict(r) for r in results], ensure_ascii=False, indent=2)
+        + "\n```"
+    )
     return "\n".join(lines)
 
 
@@ -160,37 +172,37 @@ async def get_endpoint_spec(spec_ref: str) -> str:
     """
     _validate_spec_ref(spec_ref)
 
-    points: list[dict[str, Any]] = domain_result.get_by_spec_ref(
+    found: list[SearchResult] = await domain_result.get_by_spec_ref(
         spec_ref,
         _qdrant_client,
-        _settings.QDRANT_COLLECTION,
+        _settings.COLLECTION_NAME,
     )
 
-    if not points:
+    if not found:
         raise ToolError(
             f"Endpoint no encontrado: {spec_ref!r}. "
             "Verifica que el spec_ref sea correcto y que la colección esté indexada."
         )
 
-    point = points[0]
-    payload: dict[str, Any] = point.get("payload", {})
-    raw_spec_str: str = str(payload.get("raw_spec", "{}"))
-    deeplink: str = str(payload.get("deeplink", ""))
-    server_url: str = str(payload.get("server_url", ""))
-    path: str = str(payload.get("path", ""))
-    call_url: str = server_url + path
-
-    try:
-        raw_spec: dict[str, Any] = json.loads(raw_spec_str)
-    except json.JSONDecodeError:
-        raw_spec = {"raw": raw_spec_str}
+    result = found[0]
+    # Fragmento OpenAPI a partir de MD-03 (params/body ya normalizados en compose_result).
+    openapi_fragment: dict[str, Any] = {
+        "method": result.method,
+        "path": result.path,
+        "summary": result.summary,
+        "description": result.description,
+        "parameters": result.params,
+        "requestBody": result.body,
+    }
 
     lines: list[str] = [
         f"## Spec: `{spec_ref}`\n",
-        f"**URL de llamada:** `{call_url}`",
-        f"**Deeplink:** {deeplink or '—'}\n",
+        f"**URL de llamada:** `{result.call_url}`",
+        f"**Deeplink:** {result.deeplink or '—'}\n",
         "### Fragmento OpenAPI\n",
-        "```json\n" + json.dumps(raw_spec, ensure_ascii=False, indent=2) + "\n```",
+        "```json\n"
+        + json.dumps(openapi_fragment, ensure_ascii=False, indent=2)
+        + "\n```",
     ]
     return "\n".join(lines)
 

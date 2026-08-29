@@ -32,10 +32,11 @@ class Settings(BaseSettings):
     MCP_PORT: int = Field(default=8000)
     MCP_PATH: str = Field(default="/mcp")
 
-    # --- Qdrant Cloud ---
+    # --- Qdrant Cloud (ADR-002) ---
     QDRANT_URL: str | None = Field(default=None)
     QDRANT_API_KEY: str | None = Field(default=None)
     QDRANT_COLLECTION: str = Field(default="smart-api-search")
+    COLLECTION_NAME: str = Field(default="api-operations")
 
     # --- Portal IBM API Connect ---
     IBM_PORTAL_HOST: str | None = Field(default=None)
@@ -47,11 +48,6 @@ class Settings(BaseSettings):
 
     # --- Fuente de archivos locales (AC-015) ---
     LOCAL_SPECS_DIR: str | None = Field(default=None)
-
-    # --- Qdrant Cloud (ADR-002) ---
-    QDRANT_URL: str | None = Field(default=None)
-    QDRANT_API_KEY: str | None = Field(default=None)
-    COLLECTION_NAME: str = Field(default="api-operations")
 
     # --- Embeddings (ADR-009, ADR-014, AC-026, AC-027) ---
     # EMBED_DIM NUNCA debe aparecer como literal en el código; leer siempre de aquí.
