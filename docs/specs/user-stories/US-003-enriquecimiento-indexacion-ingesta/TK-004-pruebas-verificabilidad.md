@@ -34,11 +34,7 @@ smart-api-search-ibm-hackaton/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Implementar prueba de vectores duales simultáneos
-  Con mock de `QdrantClient.upsert`, llamar a `index_operation` con una operación de prueba. Capturar el argumento `points` de la llamada a `upsert`. Afirmar que el punto contiene exactamente los dos vectores nombrados esperados (denso y disperso) y que ninguno de los dos es `None`.
-- [ ] **IT-02** — Implementar prueba del tipo del objeto disperso al indexar y al consultar
-  Al indexar: usar el mismo punto capturado en IT-01; afirmar que el valor en la rama dispersa del punto es instancia de `models.Document`. Al consultar: con mock de `QdrantClient.query_points`, llamar al método de búsqueda (implementado en US-004 / capa de búsqueda); capturar el argumento de la rama BM25 en el prefetch y afirmar que es instancia de `models.Document`. Si la capa de búsqueda no está disponible, esta sub-parte queda como observación de dependencia futura pero la prueba de indexación no se bloquea.
-- [ ] **IT-03** — Implementar prueba de ingesta multi-operación por la misma fuente
-  Construir un conjunto de al menos tres operaciones con el mismo `source_file`. Con mock del cliente Qdrant que reporta esa fuente como no existente (nuevo), invocar el orquestador de ingesta. Verificar que `upsert` se llamó exactamente tres veces (una por operación), no solo una.
-- [ ] **IT-04** — Implementar prueba de coherencia de recuento al finalizar la ingesta
-  Con mock de `QdrantClient.count` que devuelve el valor esperado, ejecutar el orquestador de ingesta sobre N operaciones de prueba. Verificar que el sistema llama a `count` al final de la ejecución y que compara el recuento obtenido con el número de operaciones indexadas; si hay discrepancia, la prueba debe fallar (o el orquestador debe emitir una advertencia capturable).
+- [x] **IT-01** — AC-021 cubierto en `tests/test_pipeline.py::test_index_operation_writes_both_vectors`
+- [x] **IT-02** — AC-022 cubierto en `tests/test_pipeline.py::test_index_operation_sparse_is_document`
+- [x] **IT-03** — AC-023 cubierto en `tests/test_verificabilidad.py::test_multi_operation_same_source_all_indexed`
+- [x] **IT-04** — AC-024 cubierto en `tests/test_verificabilidad.py::test_count_coherence_after_ingestion`

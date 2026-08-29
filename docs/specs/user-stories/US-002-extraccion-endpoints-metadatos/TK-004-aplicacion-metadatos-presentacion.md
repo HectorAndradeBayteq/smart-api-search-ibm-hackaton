@@ -31,11 +31,11 @@ tests/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Implementar función `resolve_category_key(operation: dict) -> str` que determina la clave de categoría de una operación
+- [x] **IT-01** — Implementar función `resolve_category_key(operation: dict) -> str` que determina la clave de categoría de una operación
   Usar el primer elemento de `operation["tags"]` si la lista es no vacía y el primer tag es no vacío; si `tags` está ausente o vacío, devolver cadena vacía `""` (no lanzar excepción)
-- [ ] **IT-02** — Implementar función `apply_category_metadata(operation: dict, category_config: dict[str, dict]) -> dict` que enriquece el dict de la operación con el campo `category` y los valores de presentación
+- [x] **IT-02** — Implementar función `apply_category_metadata(operation: dict, category_config: dict[str, dict]) -> dict` que enriquece el dict de la operación con el campo `category` y los valores de presentación
   Llamar a `resolve_category_key`; si la clave está en `category_config` y el entry tiene `title` o `description`: usar los valores del config para el campo `category` (la propia `category_key`) y los campos de presentación; si la clave no está en `category_config` o el entry no tiene `title` ni `description`: usar `operation["api_title"]` como `category` y `operation["api_description"]` como descripción de presentación; devolver el dict con los campos `category` añadido/actualizado; no mutar el dict original
-- [ ] **IT-03** — Integrar `apply_category_metadata` en el flujo principal de `ingest.py` después de `extract_operations` y antes de la fase de idempotencia/indexación
+- [x] **IT-03** — Integrar `apply_category_metadata` en el flujo principal de `ingest.py` después de `extract_operations` y antes de la fase de idempotencia/indexación
   Aplicar `apply_category_metadata` sobre cada operación del resultado de `extract_operations`; pasar el `category_config` cargado por TK-003 como argumento; no recargar el archivo de config en este paso
-- [ ] **IT-04** — Escribir pruebas unitarias en `tests/test_category_metadata.py`
+- [x] **IT-04** — Escribir pruebas unitarias en `tests/test_category_metadata.py`
   Cubrir: operación con tag que tiene entrada en config con `title` y `description` (se usan ambos del config), operación con tag que tiene entrada en config solo con `title` (se usa `title` del config), operación con tag que no tiene entrada en config (se usa `api_title` y `api_description` como fallback), operación sin `tags` o con `tags: []` (fallback al spec), operación con `tags: [""]` (tag vacío → fallback al spec), config vacío `{}` (fallback para todas las operaciones), función no muta el dict original

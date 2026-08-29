@@ -34,11 +34,11 @@ tests/
 
 ## Plan de implementación
 
-- [ ] **IT-01** — Crear `config/categories.yaml` con el esquema documentado y ejemplos comentados
+- [x] **IT-01** — Crear `config/categories.yaml` con el esquema documentado y ejemplos comentados
   El archivo debe ser válido YAML y admitir un dict donde cada clave es un `category_key` y su valor es un objeto con campos opcionales `title` y `description`; incluir al menos un ejemplo comentado para guiar al usuario
-- [ ] **IT-02** — Implementar función `load_category_config(path: str) -> dict[str, dict]` que carga y valida el archivo
+- [x] **IT-02** — Implementar función `load_category_config(path: str) -> dict[str, dict]` que carga y valida el archivo
   Si el archivo no existe: lanzar `SystemExit(1)` con mensaje `"Error: no se encontró el archivo de configuración de categorías: {path}"`, antes de procesar ningún spec; si el archivo tiene sintaxis YAML inválida: lanzar `SystemExit(1)` con mensaje `"Error: sintaxis inválida en {path}: {causa}"` con la descripción del error de parseo YAML; si el archivo existe y es válido pero está vacío: devolver un dict vacío (sin fallar); devolver el dict `{category_key: {title, description}}` con los campos presentes
-- [ ] **IT-03** — Integrar `load_category_config` al inicio del flujo de ingesta en `cli/ingest.py`, antes del paso de descubrimiento o lectura de specs
+- [x] **IT-03** — Integrar `load_category_config` al inicio del flujo de ingesta en `cli/ingest.py`, antes del paso de descubrimiento o lectura de specs
   La carga ocurre una sola vez; su resultado se pasa como argumento a las funciones que consumen los metadatos (no se carga en cada operación); la ruta por defecto es `config/categories.yaml` relativa a la raíz del repositorio, pero debe ser configurable vía argumento CLI `--categories-config` para los tests
-- [ ] **IT-04** — Escribir pruebas unitarias en `tests/test_category_config.py` usando archivos temporales (no fixtures en disco)
+- [x] **IT-04** — Escribir pruebas unitarias en `tests/test_category_config.py` usando archivos temporales (no fixtures en disco)
   Cubrir: archivo válido con una entrada con `title` y `description`, archivo válido con entrada sin `title` (solo `description`), archivo válido vacío (devuelve dict vacío), archivo inexistente (lanza `SystemExit` con mensaje que incluye la ruta), archivo con YAML inválido (lanza `SystemExit` con mensaje que incluye la ruta y la causa), archivo con múltiples categorías (todas cargadas)
